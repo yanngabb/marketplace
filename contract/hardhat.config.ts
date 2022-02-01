@@ -29,20 +29,30 @@ const config: HardhatUserConfig = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 10000,
+        runs: 200,
       },
     },
   },
   networks: {
+    hardhat: {
+    },
     ropsten: {
       url: process.env.ROPSTEN_URL || "",
       accounts:
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
+    matic: {
+      url: "https://rpc-mumbai.maticvigil.com",
+      accounts:
+        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    }
   },
   gasReporter: {
-    enabled: process.env.REPORT_GAS !== undefined,
-    currency: "USD",
+    enabled: process.env.REPORT_GAS ? true : false,
+    currency: "CHF",
+    coinmarketcap: process.env.COINMARKETCAP_API_KEY,
+    token: process.env.TOKEN,
+    gasPriceApi: process.env.GAS_PRICE_API_URL,
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,

@@ -13,26 +13,21 @@ async function main() {
   const seller = signers[1];
   const buyer = signers[2];
 
-  // const Users = await ethers.getContractFactory("Users");
-  // const users = await Users.deploy();
-  // await users.deployed();
+  // console.log((await tixngo.getBalance()).toString());
+  // console.log((await seller.getBalance()).toString());
+  // const tx = {
+  //   from: tixngo.address,
+  //   to: seller.address,
+  //   value: ethers.utils.parseEther("1.0"),
+  // };
+  // await tixngo.sendTransaction(tx);
+  // console.log((await tixngo.getBalance()).toString());
+  // console.log((await seller.getBalance()).toString());
 
-  // const Factory = await ethers.getContractFactory("Factory");
-  // const factory = await Factory.deploy(1, users.address);
-  // await factory.deployed();
-
-  // await users.register(await users.ORGANIZER_GROUP());
-
-  console.log((await tixngo.getBalance()).toString());
-  console.log((await seller.getBalance()).toString());
-  const tx = {
-    from: tixngo.address,
-    to: seller.address,
-    value: ethers.utils.parseEther("1.0"),
-  };
-  await tixngo.sendTransaction(tx);
-  console.log((await tixngo.getBalance()).toString());
-  console.log((await seller.getBalance()).toString());
+  const wallet = new ethers.Wallet('0x42');
+  console.log(wallet.address)
+  console.log(wallet.publicKey)
+  console.log(wallet.privateKey)
 }
 
 main().catch((error) => {
