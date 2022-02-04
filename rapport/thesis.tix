@@ -1,0 +1,426 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% EPFL report package, main thesis file
+% Goal: provide formatting for theses and project reports
+% Author: Yann Gabbud <yann.gabbud@epfl.ch>
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[a4paper,11pt,oneside]{report}
+% Options: MScThesis, BScThesis, MScProject, BScProject
+\usepackage[MScThesis,lablogo]{EPFLreport}
+\usepackage{xspace}
+
+\title{Secure, regulated and decentralized marketplace for the ticketing industry}
+\author{Yann Gabbud}
+\authorAddress{yann.gabbud@epfl.ch}
+\affiliation{Distributed Computing Laboratory \\
+and \\
+Secutix SA, an ELCA company \\}
+\supervisor{Mr. Denis Komarov}
+\adviser{Prof. Rachid Guerraoui}
+% \coadviser{Second Adviser}
+% \expert{The External Reviewer}
+
+\newcommand{\sysname}{FooSystem\xspace}
+
+\begin{document}
+\maketitle
+% \makededication
+\makeacks
+
+\begin{abstract}
+\textit{The abstract serves as an executive summary of your project.
+Your abstract should cover at least the following topics, 1-2 sentences for
+each: what area you are in, the problem you focus on, why existing work is
+insufficient, what the high-level intuition of your work is, maybe a neat
+design or implementation decision, and key results of your evaluation.} \\
+
+
+\paragraph{what area you are in} Players in the ticketing industry constantly fight against the black market and fraud to ensure that none of their customers are harmed by malicious people. An approach that is becoming popular is to use digital tickets stored and secured by a blockchain in order to benefit from its security. Secutix and TIXnGO have some experience in this area. From now on, the question of the resale of tickets and the marketplace for tickets now arises.
+
+\paragraph{the problem you focus on} This thesis seeks to show that it is possible to build the foundations of a fully decentralized and regulated user management system, ticketing system and marketplace based on smart contracts, oracles and indexers.
+
+\paragraph{why existing work is insufficient} We believe that our contribution is necessary because current solutions are mostly not fully decentralized or do not take full advantage of blockchain technologies. Moreover, having a regulated market is necessary and will certainly become the norm in the coming years when governments begin to regulate blockchain technology. 
+\end{abstract}
+
+\maketoc
+
+%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Introduction}
+%%%%%%%%%%%%%%%%%%%%%%
+
+\textit{The introduction is a longer writeup that gently eases the reader into your
+thesis~\cite{dinesh20oakland}. Use the first paragraph to discuss the setting.
+In the second paragraph you can introduce the main challenge that you see.
+The third paragraph lists why related work is insufficient.
+The fourth and fifth paragraphs discuss your approach and why it is needed.
+The sixth paragraph will introduce your thesis statement. Think how you can
+distill the essence of your thesis into a single sentence.
+The seventh paragraph will highlight some of your results
+The eights paragraph discusses your core contribution.
+This section is usually 3-5 pages.} \\
+
+
+\paragraph{Discuss the setting} The ticketing industry is a big market which is expected to reach a capitalization of around 60 billion by 2026. Every year, people all over the world buy tickets for football matches, concerts or festivals. Unfortunately, sometimes they pay too much for a ticket or they buy fake tickets resold by dishonest people.
+
+A ticket is usually a simple PDF with a QR code, and ticket and event information such as start time, location, etc. This PDF is sent by email to a \hyperref[sec:ticketing_terminology]{spectator} who prints it or keeps it on his phone. Once at the event, the spectator (c.f., background section for ticketing terminology) shows his ticket which is scanned by the staff. If the ticket is valid the spectator can enter.
+
+This approach is very simple and practical to use for the spectator and the organizer of the event. However, it is also very insecure. Indeed nothing prevents someone from buying a ticket and then reselling it to several different people. People who purchase the ticket have no way of knowing that there are multiple instances of the ticket in circulation. Therefore, although the ticket is valid, only the first person who scans their ticket will be able to enter the event. Others will be refused entry because the ticket has already been scanned. Note, that it is even possible for a dishonest person to simply forge fake tickets that look deceptively like an original without buying one first.
+
+One solution that event organizers use is to issue name tickets. As the ticket is nominative, it is impossible to forge a fake because it will be refused at the entrance to the event. In addition, no one will want to buy a nominative ticket with a different name than theirs written on it. While this parry works, it prevents ticket reselling in secondary markets. In fact, to resell a ticket, the organizer must invalidate the ticket and issue a new one in the name of the new owner.
+
+Secutix SA, a famous player in the ticketing industry, started to develop in 2016 a new product called TIXnGO which aims to prevent fraud. The goal of TIXnGO is to replace traditional paper tickets with digital tickets recorded on a blockchain, in a smart contract. Here's how it works. A user buys a ticket from an organizer. The user is invited to download the TIXnGO mobile application and to register by giving and verifying his email address. Once the user is registered, the digital ticket is created and injected into the smart contract. The smart contract saves the ticket ID and its owner. Finally the user is notified that his ticket is available on the TIXnGO application. Once the day of the event has arrived, the user presents his smartphone to the access control which lets him enter.
+
+This approach works very well to fight against fraud. Indeed, only an organizer can inject a ticket on the blockchain. Therefore, it is impossible for a dishonest user to forge fake tickets and put them into circulation.
+
+\paragraph{Lists why related work is insufficient} However, this approach is not sufficient as it is only partially decentralized and does not take full advantage of blockchain technology. Indeed, the blockchain is only used to store tickets. This certainly brings security and transparency, but a blockchain can be much more than a simple secure database. Moreover, their approach is custodial. This means that users do not actually own their tickets and cannot use their own crypto wallet to store their tickets. Finally, this approach only partially addresses the problem of the black market. Indeed, nothing prevents a dishonest user from amassing numerous tickets and reselling them at high prices. To combat the black market, TIXnGO monitors all ticket movements to detect suspicious behavior. Indeed, all operations carried out on the blockchain are visible and unalterable. Therefore, it is possible to know who is the original purchaser of a ticket, who is the current owner of a ticket and who were the previous owners of a ticket. TIXnGO analyzes this data and triggers alerts when illegal behavior is detected. If necessary, measures are taken.
+
+Ideally, the ticketing industry needs a fully decentralized, transparent, secure, GDPR compliant user management system, ticketing system and marketplace. In addition, the market place must make it possible to easily resell tickets while allowing a form of market regulation through transfer and resale rules combating the black market.
+
+\paragraph{Introduce the main challenge} However, building such a system is not easy. The first challenge comes from the immutability of the logic of smart contracts. Once a smart contract has been deployed on the blockchain, it is no longer possible to modify it. This is a huge constraint because it means that all the logic, including the transfer and resale rules, must be planned in advance and cannot be changed later. To change the logic, you must deploy a new smart contract with the new logic. You should know that deploying a smart contract is very expensive. On the Ethereum blockchain, the cost of deploying a smart contract can go up to several thousand francs in the event of heavy network congestion. Unfortunately, it is not possible to plan everything in advance and the logic and rules also vary over time. Here is an example, in 2021 the English government imposed on event organizers to restrict the transfer and resale of tickets to only English citizens, in order to limit the number of foreigners entering the country and therefore to fight against the spread of Covid19. This kind of event is not predictable in advance. Therefore, it is necessary to deploy a new smart contract that supports the new constraints and therefore, it is necessary to pay. It's really not practical in a real situation. We therefore need a system that is easily scalable.
+
+The second challenge is the size of a smart contract. A smart contract cannot exceed a certain size limit. If this size is exceeded, it is not possible to deploy it. This therefore limits the complexity of the logic that a smart contract can have. The problem is that organizers have a lot of different logic and rules depending on the type of event and the location of the event. In addition, these rules may vary from one organizer to another. For instance, the organizers of the Wimbledon championships have defined more than a hundred different transfer and resale rules. It is clearly not possible to implement all of them in a smart contract. Note however that it is possible to cheat a bit by having a main smart contract calling secondary smart contract methods. However, although this trick allows for more richness in logic, it does not allow for arbitrary high complexity.
+
+The third challenge comes from the fact that the blockchain, and therefore the smart contracts, do not have access to external data. Unfortunately, it is not possible to call a database from a smart contract. One solution would be to store all data directly on the blockchain. However, it would be extremely expensive. Moreover, according to the GDPR law, it is forbidden to store data concerning a user on the blockchain and the organizers themselves do not want some of their data to be public. Therefore, much of the logic simply cannot be implemented on a smart contract due to the lack of available data.
+
+Finally, there are three other challenges that should also be mentioned. First, the system must be able to support a very large number of simultaneous operations. In one year, the system can manage up to several million tickets. This represents several thousand operations per day to be processed. Second, operation confirmation time must be relatively short. For example, when a ticket is scanned, the system must take it into account immediately so that it is not possible to enter the event twice with the same ticket. Finally, it must be possible to make complex and heavy queries about the state of the system. For example get all scanned tickets and sort them. Current blockchains are known not to be very good at these exercises at the moment. However, great progress has been made, in particular thanks to layer 2 such as the zk rollup, which brings scalability without compromising security.
+
+\paragraph{My approach and why it is needed}  As it is not possible to implement and therefore by extension to execute arbitrary complex logic on the blockchain, we suggest executing the logic outside the blockchain and verifying the result of the execution on the blockchain. To do this, we propose the following approach. The data necessary for the execution of the logic are stored on a database. The transfer and resale rules are also stored on a database. For each transaction, an oracle checks that the rules are respected. If this is the case, the oracle issues a proof that the transaction is authorized and therefore can be executed on the blockchain. When the user creates the transaction, he attaches the proof issued by the oracle. This proof is verified during the execution of the transaction. If the proof is not valid or has not been issued by the oracle, the transaction is refused. Otherwise, the operation is executed.
+
+With this approach, we can have smart contracts much simpler, supporting any rules of transfer or resale and less greedy in gas. Indeed, the smart contract only verifies that the proof is correct and does not need to execute complex logic in order to approve or refuse the transaction.
+
+Here is an example illustrating how our approach works. Suppose a spectator wants to resell a ticket. He bought it for 100 CHF and wants to resell it for 115 CHF. Suppose also, that the organizer of the event imposes that the resale price is not higher than 20\% of the initial price. As the resale price is less than 120 CHF, the resale is authorized. Here is the procedure, first, the spectator sends his request to the oracle which checks that the rules are respected. The request contains all the information that will be used to create the resale transaction on the blockchain, such as the identity of the buyer and the resale price. The Oracle uses the information contained in the request to create a transaction approval message, signs it and returns it to the user. The user creates the transaction with the information he has previously provided to the oracle and the approval message signed by the oracle. It sends the transaction to the blockchain which verifies it. The verification is ensured by a smart contract which knows the public key of the oracle. Finally, the transaction is executed.
+
+\paragraph{Highlight some of your results} Implementation and testing show that it is possible to build such a system and that it could be deployed in production. First, this approach is scalable. Indeed, an oracle running on a simple laptop computer easily supports 1,500 requests per second. The main bottleneck is still the blockchain, but a lot of progress has been made with projects such as StarkNet, zkSync or Polygon. Second, verification on the blockchain of the oracle's message leads to a relatively small increase in transaction costs, on the order of 10\%. Note that if we were to run all the logic on the blockchain, the cost increase would be much higher. A simulation of the system on Polygon shows that the cost of performing transactions is less than 1 cent, which is perfectly bearable for the ticketing industry.
+
+This approach therefore makes it possible to create a regulated market place that supports any rules. In addition, as the execution is carried out or verified on the blockchain, we ensure a very high level of security and decentralization. The only downside comes from the oracle which is unfortunately not decentralized. However, decentralized oracles, such as Chainlink, exist and can be used to achieve a fully decentralized system.
+
+\paragraph{Discusses your core contribution} In summary, our main contribution is to lay the foundations for building a secure, regulated and decentralized user management system, ticketing system and marketplace. We also offer other mechanisms that can be interesting for the ticketing industry such as time-based blockchain logic. For example. Automatically close an event once it is over. Or prevent ticket resale once the event has started. Finally, we would like to say that although this approach uses the ticketing industry as a scenario, it can be perfectly applied to other sectors with similar needs.
+
+%%%%%%%%%%%%%%%%%%%%
+\chapter{Background}
+%%%%%%%%%%%%%%%%%%%%
+
+\textit{The background section introduces the necessary background to understand your
+work. This is not necessarily related work but technologies and dependencies
+that must be resolved to understand your design and implementation.
+This section is usually 3-5 pages.} \\
+
+In this section, we introduce the background needed to understand this thesis. We first present the ticketing industry and the vocabulary it uses. Then we introduce the technologies and dependencies you need to know to understand the design and implementation.
+
+\section{Ticketing terminology}
+\label{sec:ticketing_terminology}
+
+\begin{description} 
+    \item \textbf{Digital Ticket}: A digital ticket is nothing more than a digital representation of a paper ticket. However, it still has many advantages. First, it is more transportable and above all much more easily transferable or resalable than its paper counterpart. It is also more difficult to create fake digital tickets because they are generally cryptographically signed and governed by a system with an access control preventing anyone from putting them into circulation without first being approved. In our case, we use the ERC721 standard to represent digital tickets. This standard works well for digital tickets because it allows us to create unique transferable assets and keep track of who owns them.
+    \item \textbf{Ticket wallet}: A ticket wallet is an application that stores digital tickets and displays them when requested by the user. In general, a wallet is a mobile application like the Apple wallet or a wallet dedicated to tickets like the TIXnGO wallet.
+    \item \textbf{Event}: An event is a generic term that encompasses sporting events, festivals, concerts, or any other event that you need a ticket to attend.
+    \item \textbf{Organizer}: An event organizer, or organizer for short, is a person or entity that creates, manages, and promotes an event and sells tickets for it.
+    \item \textbf{Spectator}: A spectator is someone who purchases tickets and attends events. A spectator may also transfer or resell the tickets he has purchased from an organizer.
+    \item \textbf{User}: Sometimes the term user is used. This term encompasses both organizers and spectators.
+    \item \textbf{Ticket Transfer}: A spectator who owns a ticket can transfer it to someone else. This person becomes the new owner of the ticket. This change of ownership is called a ticket transfer.
+    \item \textbf{Ticket Resale}: A spectator who owns a ticket can resell it to someone else. This is similar to a ticket transfer, except that in addition to the ownership transfer, there is also a money transfer. We say the current owner of the ticket is the seller and the person buying the ticket is the buyer. Therefore the seller transfers the ticket and the buyer transfers the money.
+    \item \textbf{Ticketing system}: A ticketing system, like Secutix, is a ticket management tool. An event organizer uses a ticketing system to create and manage events, to create, manage and sell tickets for an event, and to provide support and assistance to spectators who purchase tickets for its events.
+    \item \textbf{Ticket Distribution System}: A ticket distribution system, such as TIXnGO, is a tool for managing the distribution of digital tickets. A ticket distribution system does not replace a ticketing system but is complementary. Often it also helps to fight against fraud and black market. In general, there are three main components. The first component is a management interface used by the organizer to distribute tickets purchased by spectators and to track who the current owners are. The second component is a ticket wallet which is used by the spectator to store, display, transfer and resell tickets. The third component is a backend which execute the requests of the organizers and the spectators. It is important to note that only a registered organizer can use the management interface. Therefore, only a genuine organizer can distribute tickets such that no fake tickets are in circulation.
+    \item \textbf{Marketplace}: A marketplace is a platform that allows the secure sale of assets between parties that do not trust each other. In our case, the assets are tickets. The marketplace displays tickets that are on resale with their resale price. A seller can put a ticket up for resale and withdraw it later if they change their mind. A buyer can purchase a ticket on resale.
+\end{description}
+
+\section{Ethereum blockchain}
+Ethereum is an open source \footnote{https://en.wikipedia.org/wiki/Blockchain} blockchain that runs smart contracts. It aims to be a global internet computer for building decentralized applications \footnote{https://en.wikipedia.org/wiki/Decentralized_application}. It is currently the main blockchain for DeFi \footnote{https://en.wikipedia.org/wiki/Decentralized_finance}, NFTs and Dapps.
+
+The system we propose is based on the Ethereum blockchain. However, note that the implementation can be deployed on any EVM-compatible blockchain, such as Avalanche, Polygon or Binance smart chain. Note also that it is perfectly possible to implement the design so that the system can be deployed on blockchains that are not EVM-compatible but that support smart contracts such as Solana or Cardano.
+
+\section{Ethereum wallet}
+An Ethereum wallet is an application that let a user interact with the Ethereum blockchain. With an Ethereum wallet, the user can manage his account. For instance he can get his ETH balance. He can make transaction to transfer ETH to someone else. He can also connect and access to the Ethereum applications. An Ethereum wallet stores a public and a private key. The public key is used to identify the Ethereum account and by extension its owner. The private key is used to sign transactions and ensure that only the owner of the wallet can interact with his account. More information here \footnote{https://ethereum.org/en/wallets/}.
+
+\section{Transaction}
+A transaction is an operation initiated by an external account \footnote{https://ethereum.org/en/developers/docs/accounts/} that changes the state of the blockchain. For example, a transaction is a transfer of ethers from one person to another. Since the transaction changes the state of the blockchain, the account that initiates the transaction must pay a transaction fee to the blockchain. If we go back to the example above, we see that the state of the blockchain is changed because the sender's account is decreased and the receiver's account is increased by the transferred amount. More information about transactions here \footnote{https://ethereum.org/en/developers/docs/transactions/}.
+
+\section{Call}
+A call is an operation on the blockchain that does not change the state of the blockchain. Both external and contract accounts can make calls. For example, one can make a call to get his ether balance. Since a call is read-only, the call initiator does not have to pay any fees. More information about calls here \footnote{https://ethereum.stackexchange.com/a/770} 
+
+\section{Smart contract}
+A smart contract, or contract for short, is a program that runs on the Ethereum blockchain. As the Ethereum blockchain is Turing complete, a smart contract can implement any arbitrary logic. However, there are two limitations to keep in mind. The first one is that a smart contract cannot call an external service and only has access to data that is stored on the blockchain or sent with a transaction. The second one is that a smart contract cannot implement arbitrary complex functions. Indeed if a function exceeds a certain complexity, the function will be reverted by the EVM \footnote{https://ethereum.org/en/developers/docs/evm/} because it exceeds the gas limit \footnote{https://ethereum.org/en/developers/docs/gas/#what-is-gas -limit }.
+
+\section{ERC20}
+ERC20 \footnote{https://ethereum.org/en/developers/docs/standards/tokens/erc-20/} is the Ethereum standard for creating fungible tokens. It defines a set of rules that must be implemented by any token wishing to be compatible with the standard. The main feature of such a token is fungibility. This means that the tokens are indistinguishable from each other. For example fiat currencies, such as CHF, EUR or USD. are fungible. Any CHF 100 note can be exchanged for another CHF 100 note. Stock auctions are also fungible. Thus, this standard aims to make it possible to represent any fungible asset on the Ethereum blockchain. 
+
+\section{ERC721}
+ERC721 \footnote{https://ethereum.org/en/developers/docs/standards/tokens/erc-721/} is a standard for non-fungible tokens. Like the ERC20 standard, ERC721 is a very popular standard. However, it has a different purpose. It aims to represent any non-fungible asset on the Ethereum blockchain. A non-fungible asset can be, for example, an event ticket. Indeed, each ticket has a unique identifier (UID) that distinguishes it from any other ticket for the same event. The Venus of Milo is another example of a non-fungible asset. There is only one Venus that was sculpted by Paros.
+
+\section{Keccak256}
+Keccack256 is one of the most widely used hash functions in the Ethereum ecosystem. This hash function is used in the EVM and in Ethash, the PoW algorithm of Ethereum. Note that this hash function is named keccak256 and not SHA3 \footnote{https://en.wikipedia.org/wiki/SHA-3} even though they are nearly identical. The reason is that keccak256 is an old version of SHA3. SHA3 was slightly modified in August 2015, right after the launch of Ethereum in July 2015. Oracles use keccak256 to calculate the approval message from user inputs.
+
+\section{ECDSA}
+ECDSA, Elliptic Curve Digital Signature Algorithm, is an algorithm used to digitally sign messages. This algorithm is very suitable for blockchains because, compared to its counterparts such as RSA, it uses shorter keys, it has faster signing and encryption operations and it offers the same level of security. Oracles use ECDSA to sign the messages they computed with keccak256.
+
+\section{Blockchain oracle}
+As mentioned earlier, smart contracts do not have access to data stored outside of the blockchain. Therefore, blockchain needs a way to bring data securely onto the chain. This is the role of an oracle. It guarantees the authenticity and integrity of this data so that the blockchain can access off-chain data securely without compromising its security.
+
+\section{Graph protocol}
+The Graph \footnote{https://thegraph.com/docs/en/about/introduction/} is a protocol used to index blockchain and smart contracts. It is very useful because it allows building and maintaining off-chain indexes. These indexes can then be used to obtain information about the state of the blockchain or the a smart contracts, for example the balance of users in an ERC20 smart contract. Building an off-chain index is much more interesting than building an on-chain index because it simplifies the smart contract a lot. This is because there is no need to create and maintain complex data structures in the smart contract in order to be able to query arbitrary data, such as getting all balances above a certain amount. It also allows to query data in bulk, which is not possible with a blockchain call due to the gas limit. Note that the indexes are stored in a traditional database such as Postgres.
+
+%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Related Work}
+%%%%%%%%%%%%%%%%%%%%%%
+
+\textit{The related work section covers closely related work. Here you can highlight
+the related work, how it solved the problem, and why it solved a different
+problem. Do not play down the importance of related work, all of these
+systems have been published and evaluated! Say what is different and how
+you overcome some of the weaknesses of related work by discussing the 
+trade-offs. Stay positive!
+This section is usually 3-5 pages.} \\
+
+%%%%%%%%%%%%%%%%
+\chapter{System overview}
+%%%%%%%%%%%%%%%%
+
+\textit{Introduce and discuss the design decisions that you made during this project.
+Highlight why individual decisions are important and/or necessary. Discuss
+how the design fits together.
+This section is usually 5-10 pages.} \\
+
+In this chapter, we first enumerate the goals that the system must achieved. Then, we describe the system and the design choices that were made. 
+
+\section{System goals}
+
+NFTiX offers the following benefits in terms of decentralization, scalability and security.
+
+\begin{description}
+  \item \textbf{Regulated Market}: NFTiX offers a mechanism to control the resale process so that the black market is limited.
+  \item \textbf{Decentralization}: Expect oracles, there is no single point of failure in NFTix such as a trusted third party.
+  \item \textbf{High Throughput}: NFTiX supports thousands of daily operations (ticket issuance, transfer, resale, etc.)
+  \item \textbf{Low Latency}: NFTiX offers low latency transaction confirmation.
+  \item \textbf{Low Costs}: The operating cost of NFTiX is low for NFTiX developers, event organizers and spectators.
+  \item \textbf{Ticket integrity, authenticity, tampering}: NFTiX ensures a high level of security so that the integrity, authenticity and unforgeability of tickets is guaranteed and no fraud is possible.
+\end{description}
+
+\section{Architecture overview}
+This section aims to provide an overview of the main components and their interoperability. You can find more details about the components in the following sections.
+
+\includegraphics[width=\textwidth]{architecture_overview.png}
+
+\begin{description} 
+    \item \textbf{Identity smart contract}: It allows organizers and spectators to register and unregister. It allows NFTiX to revoke a user who would have an inappropriate behavior. He defines and applies the access control policy. It stores the address of registered users. It stores the public key of the oracle identifier so that it can be checked as evidence when registering an organizer or a spectator.
+    \item \textbf{TIX smart contract}: It keeps track of the owners of the TIX token. The TIX token is the utility token of NFTiX.
+    \item \textbf{Ticketing smart contract}: It stores the information of the events and of the digital tickets of the organizers. It keeps track who is the owner of each ticket. And, it exposes several function that allows the organizers to update the information of their events and their tickets.
+    \item \textbf{Exchange smart contract}: It allows spectators to resale or to swap tickets. It works hand in hand with the three other contracts and the approver oracle to provide to the spectators a secure and regulated marketplace.
+    \item \textbf{Identifier oracle}: It verifies users' information during the registration process and creates registration proofs that can be used by the user to register their Ethereum address on the Identity smart contract.
+    \item \textbf{Approver oracle}: It verifies user's transactions (resales, swaps) against the rules defined by the organizers and create approval proofs that can be used by the user to send exchange or swap transactions to the Exchange smart contract.
+    \item \textbf{Price feed oracle}: It periodically sends the price in USD of the Ethereum and the TIX.
+    \item \textbf{Scanner oracle}: TODO
+    \item \textbf{Graph node}: It indexes the four smart contracts and exposes an endpoint that accepts graphql requests.
+    \item \textbf{Database}: It stores the indexed data of the graph node and the users' data.
+\end{description}
+
+\section{Ethereum blockchain}
+The Ethereum blockchain is the cornerstone of the system. It is it who is responsible for operating the smart contacts that implement the business logic.
+
+This component must be robust and battle tested to ensure that the execution environment is safe. We chose Ethereum because it is the most mature blockchain at the moment. It has been tested extensively. It hosts many projects. And it has a complete development and test environment.
+
+However, it has a big disadvantage, the high cost of transaction fees induced by the congestion of its network. Unfortunately, it suffers from its popularity. However, many scalability solutions are under development and things should improve. In the meantime, it is possible to deploy the system on Polygon which is EMV-compatible and which offers a good level of security.
+
+\section{Smart contracts}
+This section describes the core of NFTiX which is responsible for applying the business logic. The core is made up of four interacting smart contracts, the Identity contract, the TIX contract, the Ticketing contract and the Exchange contract.
+
+\subsection{Identity smart contract}
+The Identity contract allows organizers and spectators to subscribe and unsubscribe from the system. It allows NFTiX to revoke a organizer or a spectator who behaves inappropriately. It stores the addresses of registered organizers and spectators. It stores the Identifier oracle's public key so that it can verify the signature of approval messages issued by the oracle when an organizer or spectator registers.
+
+This contract defines and applies the role-based access control policy. For now, the policy is very simple but it can be extended as needed. There are four roles: ORGANIZER, SPECTATOR, UNREGISTERED and REVOKED. An organizer who registers gets the ORGANIZER role and a spectator who registers gets the SPECTATOR role. When an organizer or spectator unregisters, their address is marked as UNREGISTERED. If NFTiX bans a user from the system for inappropriate behavior, the address is marked as REVOKED.
+
+\subsection{TIX smart contract}
+This contract manages the utility token of NFTiX, the TIX token. This contract is ERC20 compliant. The TIX is used to pay platform usage fees and to purchase resale tickets. Indeed, the platform generates revenue through the activity of its users. For example, when an organizer creates an event, he must pay a creation fee. Or, when a resale is made, a percentage of the resale is taken and shared between the event organizer and NFTiX.
+
+The contract stores the price of TIX against dollars and ETH. These prices are regularly updated by the price feed oracle. The smart contract also stores the public key of this oracle so that only it can update the prices.
+
+Users can request the current price of TIX against dollars or ETH. They can ask how many tokens an amount in dollars or ETH is worth. They can also buy TIX with ETH or sell TIX and receive ETH in return. When buying, TIX are minted and when selling, TIX are burned. Finally, the admin of NFTiX can request the ETH balance of the contract and remove or add ETH in the smart contract.
+
+It is important to note that the token has no real use in itself because we could very well use ether instead. However, it does show to Secutix SA how a utility token can be integrated into the system and used by users. You will find more information on the potential use of the token in the future work section.
+
+\subsection{Ticketing smart contract}
+This contract manages events and tickets. As the tickets are represented by NFTs, the contract complies with the ERC721 standard.
+
+Let's start by detailing the events. Events are represented by a data structure containing the following fields: the address of the organizer, the name of the event, the place, the opening date and time, the closing date and time and finally the state of the event. 
+TODO: explain opening date and time utility
+TODO: explain clausing date and time utility
+
+There are three possible states for an event. The first state is PENDING. This state means that the event has been created but that it is not yet open. Therefore, an organizer can create tickets for this event. However, it is impossible to transfer or resell them. The second state is OPEN. This state means that the event is activated. Therefore, spectators can transfer and resell their tickets. The last state is CANCELED. This state is obtained when an event is cancelled. Like the PENDING state, it allows transfers and resale to be frizzed. Although these two states have the same effects, it is useful to be able to distinguish them in order to filter events and tickets.
+
+\subsection{Exchange smart contract}
+
+\section{Graph node}
+
+\section{Backend}
+
+\subsection{Database}
+
+\subsection{Oracles}
+
+\subsubsection{Identifier}
+
+\subsubsection{Approver}
+
+\subsubsection{Price feed}
+
+\subsection{Web server}
+
+%%%%%%%%%%%%%%%%
+\chapter{Security design and analysis}
+%%%%%%%%%%%%%%%%
+
+
+Initial setup: the smart contract need to know the public key of the oracles
+
+
+
+\section{Inheritance of Ethereum security}
+All the business logic is on-chain
+
+\section{Non-custodial design}
+The users are the owner of the assets and the system cannot manipulate the users' assets
+
+\section{Tamper-proof inputs}
+Crypto ensures integrity, authenticity, non-repudiation of off-chain data sent by the oracles to the blockchain
+
+\section{Treat model}
+According to the above sections, we can now state the threat model
+
+Link to the risk analysis
+
+\section{Risk acceptance and assumptions}
+Distributed oracles, such as chainlink, needed to avoid single point of failure and secure off-chain computation
+
+No censorship resistance
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Implementation}
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+\textit{The implementation covers some of the implementation details of your project.
+This is not intended to be a low level description of every line of code that
+you wrote but covers the implementation aspects of the projects.
+This section is usually 3-5 pages.} \\
+
+
+%%%%%%%%%%%%%%%%%%%%
+\chapter{Evaluation}
+%%%%%%%%%%%%%%%%%%%%
+
+\textit{In the evaluation you convince the reader that your design works as intended.
+Describe the evaluation setup, the designed experiments, and how the
+experiments showcase the individual points you want to prove.
+This section is usually 5-10 pages.} \\
+
+\section{Experimental setup}
+
+\section{Performance}
+
+\subsection{Transactions}
+
+\subsection{Calls (GraphQL)}
+
+\subsection{Signatures (Oracles)}
+Time to compute 100000 hashes: 15660.014899998903 milliseconds
+
+Average time to compute a single hashe: 0.15660014899998903 milliseconds
+
+Time to compute 100000 signatures: 28457.437199998647 milliseconds
+
+Average time to compute a single signature: 0.2845743719999865 milliseconds
+
+Time to compute 100000 hashes + signatures: 52324.1595999971 milliseconds
+
+Average time to compute a single hash + signature: 0.523241595999971 milliseconds
+
+\section{Costs}
+General costs (Measured done the 01.02.2022):
+
+\includegraphics[width=\textwidth]{marketplace_price_ethereum_01_02_2022.PNG}
+
+\includegraphics[width=\textwidth]{marketplace_price_polygon_01_02_2022.PNG}
+
+\includegraphics[width=\textwidth]{marketplace_price_avalanche_01_02_2022.PNG}
+
+\includegraphics[width=\textwidth]{marketplace_price_binance_01_02_2022.PNG}
+
+Additional costs induced by the signature (Measured done the 01.02.2022):
+
+\includegraphics[width=\textwidth]{identity_sig_price_overhead_ethereum_01_02_2022.PNG}
+
+\includegraphics[width=\textwidth]{exchange_sig_price_overhead_ethereum_01_02_2022.PNG}
+
+Estimated costs to run the backend, the database, the three oracles and the graph node on AWS:
+
+API Gateway:
+
+Database: 
+
+Backend:
+
+Identifier:
+
+Approver:
+
+Price feed:
+
+Graph node:
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Limitation and future work}
+%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Design optimization}
+A lot of transaction must be done in order to resale or swap a ticket: approve exchange to transfer the ticket, approve exchange to transfer TIX, create resale, accept resale. 
+
+Solution1: use crypto, create off-chain proofs that authorizes the exchange to transfer TIX and ticket.
+
+Solution2: list the ticket in resale off-chain along with a proof of "I want to resale my ticket" of the seller 
+
+Remark: not enough time to modify the system
+
+\section{Proof of ownership and scanner oracle}
+
+\section{Performance test on zkSync or StarkNet}
+
+\section{TIX}
+gouvernance: The organizer could vote to add new features in the product
+
+Reward: liquidity pool storing a percentage of each trade. This pool is then redistributed to the user (Circle of virtue of the money)
+
+etc
+
+
+
+%%%%%%%%%%%%%%%%%%%%
+\chapter{Conclusion}
+%%%%%%%%%%%%%%%%%%%%
+
+\textit{In the conclusion you repeat the main result and finalize the discussion of
+your project. Mention the core results and why as well as how your system
+advances the status quo.} \\
+
+\cleardoublepage
+\phantomsection
+\addcontentsline{toc}{chapter}{Bibliography}
+\nocite{*}
+\printbibliography
+
+\appendix
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Risk analysis}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+In case you ever need an (optional) appendix.
+
+You need the following items:
+\begin{itemize}
+\item A box
+\item Crayons
+\item A self-aware 5-year old
+\end{itemize}
+
+\end{document}
