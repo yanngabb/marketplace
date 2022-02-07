@@ -706,15 +706,15 @@ describe("Ticketing", function () {
     await expect(
       spectator1Ticketing.transferFrom(spectator1.address, spectator2.address, 1)
     ).to.be.revertedWith(
-      "Transfer impossible. The event is over"
+      "Transfer impossible. The event is already started"
     );
   });
 
   it("Should prevent a spectator to transfer a token if the event is not yet opened or the event is cancelled", async function () {
     const fee = EVENT_REGISTRATION_FEE.add(MINTING_FEE);
     organizerTix.increaseAllowance(ticketing.address, fee);
-    const now = Math.floor(Date.now() / 1000)
-    const nowPlusOneYear = now + 1000000;
+    const now = Math.floor(Date.now() / 1000) + 1000000
+    const nowPlusOneYear = now + 100000000000;
     await organizerTicketing.registerEvent(
       "test",
       "test",
@@ -733,8 +733,8 @@ describe("Ticketing", function () {
   it("Should prevent a spectator to transfer a token that is not in a valid state", async function () {
     const fee = EVENT_REGISTRATION_FEE.add(MINTING_FEE);
     organizerTix.increaseAllowance(ticketing.address, fee);
-    const now = Math.floor(Date.now() / 1000)
-    const nowPlusOneYear = now + 1000000;
+    const now = Math.floor(Date.now() / 1000) + 1000000
+    const nowPlusOneYear = now + 100000000000;
     await organizerTicketing.registerEvent(
       "test",
       "test",

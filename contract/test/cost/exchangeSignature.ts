@@ -7,9 +7,9 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { Identity, TIX, Ticketing, ExchangeSignature } from "../typechain";
+import { Identity, TIX, Ticketing, ExchangeSignature } from "../../typechain";
 
-describe("Exchange", function () {
+describe("ExchangeSignature", function () {
   let signers;
   let tixngo: SignerWithAddress;
   let spectator1: SignerWithAddress;

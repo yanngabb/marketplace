@@ -62,7 +62,7 @@ interface ITicketing is IERC721 {
         address[] calldata owners
     ) external;
 
-    function burn(uint256 ticketIds) external;
+    function burn(uint256 tokenId) external;
 
     function burnBatch(uint256[] calldata tokenIds) external;
 

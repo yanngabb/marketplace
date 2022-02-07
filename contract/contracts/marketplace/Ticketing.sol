@@ -322,8 +322,8 @@ contract Ticketing is Context, Ownable, ERC721, ITicketing {
             "You cannot transfer a ticket to an unregisterd address"
         );
         require(
-            block.timestamp < _events[_tokens[tokenId].eventId].closingDate,
-            "Transfer impossible. The event is over"
+            block.timestamp < _events[_tokens[tokenId].eventId].openingDate,
+            "Transfer impossible. The event is already started"
         );
         require(
             _events[_tokens[tokenId].eventId].state == EVENT_OPEN,
@@ -348,8 +348,8 @@ contract Ticketing is Context, Ownable, ERC721, ITicketing {
             "You cannot transfer a ticket to an unregisterd address"
         );
         require(
-            block.timestamp < _events[_tokens[tokenId].eventId].closingDate,
-            "Transfer impossible. The event is over"
+            block.timestamp < _events[_tokens[tokenId].eventId].openingDate,
+            "Transfer impossible. The event is already started"
         );
         require(
             _events[_tokens[tokenId].eventId].state == EVENT_OPEN,
@@ -373,8 +373,8 @@ contract Ticketing is Context, Ownable, ERC721, ITicketing {
             "You cannot transfer a ticket to an unregisterd address"
         );
         require(
-            block.timestamp < _events[_tokens[tokenId].eventId].closingDate,
-            "Transfer impossible. The event is over"
+            block.timestamp < _events[_tokens[tokenId].eventId].openingDate,
+            "Transfer impossible. The event is already started"
         );
         require(
             _events[_tokens[tokenId].eventId].state == EVENT_OPEN,

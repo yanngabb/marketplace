@@ -228,6 +228,8 @@ The Identity contract allows organizers and spectators to subscribe and unsubscr
 
 This contract defines and applies the role-based access control policy. For now, the policy is very simple but it can be extended as needed. There are four roles: ORGANIZER, SPECTATOR, UNREGISTERED and REVOKED. An organizer who registers gets the ORGANIZER role and a spectator who registers gets the SPECTATOR role. When an organizer or spectator unregisters, their address is marked as UNREGISTERED. If NFTiX bans a user from the system for inappropriate behavior, the address is marked as REVOKED.
 
+TODO: ADD REGISTRATION DIAGRAM
+
 \subsection{TIX smart contract}
 This contract manages the utility token of NFTiX, the TIX token. This contract is ERC20 compliant. The TIX is used to pay platform usage fees and to purchase resale tickets. Indeed, the platform generates revenue through the activity of its users. For example, when an organizer creates an event, he must pay a creation fee. Or, when a resale is made, a percentage of the resale is taken and shared between the event organizer and NFTiX.
 
@@ -240,17 +242,56 @@ It is important to note that the token has no real use in itself because we coul
 \subsection{Ticketing smart contract}
 This contract manages events and tickets. As the tickets are represented by NFTs, the contract complies with the ERC721 standard.
 
-Let's start by detailing the events. Events are represented by a data structure containing the following fields: the address of the organizer, the name of the event, the place, the opening date and time, the closing date and time and finally the state of the event. 
-TODO: explain opening date and time utility
-TODO: explain clausing date and time utility
+Let's start by detailing the events. Events are represented by a data structure containing the following fields: an event ID, the address of the organizer, the name of the event, the place, the opening date and time, the closing date and time and finally the state of the event. 
+
+Three of these fields serve useful purposes for business logic: the event ID, the opening date and time, and the state. The others could be stored off-chain to reduce gas consumption. The event ID is used to distinguish events from each other. This identifier is unique. The opening date and time corresponds to the opening of the doors of the event. This information is used to prevent transfers and resales of tickets after the opening of the event. This measure is necessary to prevent a malicious person from trying to resell a ticket that has already been scanned.
 
 There are three possible states for an event. The first state is PENDING. This state means that the event has been created but that it is not yet open. Therefore, an organizer can create tickets for this event. However, it is impossible to transfer or resell them. The second state is OPEN. This state means that the event is activated. Therefore, spectators can transfer and resell their tickets. The last state is CANCELED. This state is obtained when an event is cancelled. Like the PENDING state, it allows transfers and resale to be frizzed. Although these two states have the same effects, it is useful to be able to distinguish them in order to filter events and tickets.
 
+Now let's take a look at tickets. A ticket is made up of four fields: a token ID, an event ID, a ticket ID and a state. The token ID is the unique identifier that distinguishes NFTs from each other. The event ID is the event the ticket belongs to. The ticket ID is a unique identifier that allows the organizer to distinguish his tickets. Note that two organizers can share the same ticket ID. Therefore, to uniquely identify a ticket, you must either know its token ID or its ticket ID and its event ID. Finally, like an event, a ticket has a state. The first state is VALID. This means that the ticket can be transferred, resold or used to enter the event. The second state is INVALID. This means that the ticket has been invalidated by the organizer. There can be several reasons for this. It's a test ticket. Its bearer tried to defraud and its ticket was deleted. Or the ticket was canceled for another reason. The last state is SCANNED. This means that the ticket is valid and that the bearer has entered the event. This state is useful because sometimes it is necessary to scan a ticket again in the event, for example, to access the VIP area.
+
+Let's now look at the interaction of organizers and spectators with the smart contract. First, it should be noted that some smart contract methods, such as event creation, can only be performed by an organizer. If a spectator attempts to execute one of these methods, the transaction will be reverted. To apply this restriction, the smart contract queries the Identity smart contract to find out if the initiator of the transaction is an organizer. Secondly, it should be noted that an organizer can perform an operation, for example minting a ticket, only if it is related to one of his events. If an organizer tries to interact with assets that they don't own, the transaction is reverted.
+
+An organizer can interact with the contract to register an event. To do this, he must provide all the fields listed above and pay the registration fee. This fee is paid in TIX. It is automatically taken from the organizer's balance. Therefore, the organizer must first have sufficient TIX and approve \footnote{https://tokenallowance.io/} the smart contract to transfer the registration fee amount on its behalf. If either of these two conditions are not satisfied, the transaction is reverted. Note that if the opening date and time is after the closing date and time, the transaction also fails. Once an event is registered, its organizer can update its fields if an error was made during registration.
+
+An organizer can mint tickets for his events. To do this, it must provide an event ID that exists, a ticket ID, and an address of a registered spectator who will own the ticket. If the event ID is unknown or if the address does not match a registered spectator, the operation is reverted. The organizer must also pay a minting fee for each minted ticket. The payment of the minting fee is analogous to the payment of the registration fee. The smart contract supports batch injections to make life easier for the organizer. To do this, the organizer must provide an event ID, a ticket ID list and an address list.
+
+An organizer can burn or update the status of their tickets. This operation is analogous to minting and can also be executed by batch. However, it does not include any fees.
+
+A spectator can transfer a ticket to another spectator. For a transfer to be executed successfully, the transaction initiator must be the ticket owner, the ticket recipient must be a registered viewer, the event status must be OPEN, and the event status must be ticket is VALID
+
+Finally, anyone can get all the information related to an event or a ticket by providing the specific event ID or token ID.
+
+TODO: ADD EVENT REGISTRATION DIAGRAM
+
+TODO: ADD MINTING DIAGRAM
+
+TODO: ADD TRANSfER DIAGRAM
+
 \subsection{Exchange smart contract}
+The Exchange smart contract allows the spectator to resell or swap their ticket in complete safety. The contract lists all resale and swap offers. In addition, this smart contract verifies that each operation has been approved by the Oracle Approver before executing it.
+
+Let's start with ticket resale. The resale takes place in two stages. In the first stage the seller creates a resale offer and in the second stage a buyer accepts the offer.
+
+To create the resale offer, the seller must specify which token they want to resell and at what price in USD. If he wishes, he can specify an optional buyer. By specifying an optional buyer, only this person can accept the resale offer. If someone else tries to accept the offer, the transaction is reverted. The seller must also attach the approval message signed by the Approver Oracle. The transaction succeeds if the following conditions are met. There is no existing offer to resell this token. There is no existing swap offer for this token. The initiator of the transaction is the owner of the token. The price is not negative. The optional buyer, if defined, is a registered viewer. The approval message is valid and has been signed by the Approver Oracle. Note that it is possible to cancel a resale offer as long as it has not yet been accepted.
+
+To accept the resale offer, the buyer must specify which token they wish to purchase and approve the smart contract to transfer an amount in TIX equivalent to the resale price. Note that the sale price is specified in USD but the transaction is made in TIX. To find out how many TIXs need to be approved, the buyer can request the current resale price from the smart contract by providing the token ID of the ticket they wish to purchase. The transaction succeeds if the following conditions are met. A resale offer for the token exists. The buyer is a registered spectator. The buyer is the optional buyer, if specified. The approved amount is sufficient to satisfy the resale.
+
+Note that a fee is taken on each resale. This fee is a percentage of the resale amount. The purpose of this fee is to cover the operating costs of NFTiX and to give a commission to the organizer of the event.
+
+TODO: ADD RESALE DIAGRAM
+
+The swap works analogously to the resale. The major difference is that during a resale a ticket is exchanged for money while during a swap a ticket is exchanged for another ticket.
+
+To create a swap offer, the one making the offer must specify which token he wishes to swap and for which event he wishes to receive a token in exchange. As for the resale, he can specify an optional buyer and he must attach the approval message signed by the Approver oracle. The transaction succeeds if the following conditions are met. There is no existing offer to resell this token. There is no existing swap offer for this token. The event whose ticket is wanted by the creator of the offer exists. The initiator of the transaction is the owner of the token. The optional buyer, if defined, is a registered viewer. The approval message is valid and has been signed by the Oracle Approver. It is also possible to cancel a swap offer as long as it has not yet been accepted.
+
+To accept the swap offer, the buyer must specify which offer he wishes to accept and which token he wishes to give in exchange. The transaction succeeds if the following conditions are met. The token is currently on resale. The buyer is a registered spectator. The token provided by the offer acceptor must be part of the desired event. The buyer is the optional buyer, if specified.
+
+Finally, anyone can get a list of resale and swap offers.
+
+TODO: ADD SWAP DIAGRAM
 
 \section{Graph node}
-
-\section{Backend}
 
 \subsection{Database}
 
@@ -262,14 +303,14 @@ There are three possible states for an event. The first state is PENDING. This s
 
 \subsubsection{Price feed}
 
-\subsection{Web server}
-
 %%%%%%%%%%%%%%%%
 \chapter{Security design and analysis}
 %%%%%%%%%%%%%%%%
 
 
 Initial setup: the smart contract need to know the public key of the oracles
+
+expliquer que l'interoperabilité des smart contract permet de construire un access control efficace. Exemple: un specateur ne peut transferer un ticket qu'a un utilisateur enregistré
 
 
 
@@ -316,6 +357,7 @@ This section is usually 5-10 pages.} \\
 \section{Performance}
 
 \subsection{Transactions}
+Maximum batch size
 
 \subsection{Calls (GraphQL)}
 
@@ -392,6 +434,8 @@ gouvernance: The organizer could vote to add new features in the product
 Reward: liquidity pool storing a percentage of each trade. This pool is then redistributed to the user (Circle of virtue of the money)
 
 etc
+
+\section{Use closing date and CLAIMED state to uniquely claim or automatically generate ticket NFT collectible once the event is over}
 
 
 
