@@ -147,6 +147,9 @@ ERC20 \footnote{https://ethereum.org/en/developers/docs/standards/tokens/erc-20/
 \section{ERC721}
 ERC721 \footnote{https://ethereum.org/en/developers/docs/standards/tokens/erc-721/} is a standard for non-fungible tokens. Like the ERC20 standard, ERC721 is a very popular standard. However, it has a different purpose. It aims to represent any non-fungible asset on the Ethereum blockchain. A non-fungible asset can be, for example, an event ticket. Indeed, each ticket has a unique identifier (UID) that distinguishes it from any other ticket for the same event. The Venus of Milo is another example of a non-fungible asset. There is only one Venus that was sculpted by Paros.
 
+\section{Smart contract event}
+An event is an information that can be emitted and logged by the blockchain when a transaction is mined. For example, when someone transfers ERC20 tokens, a Transfer event is emitted. This event includes the following information: the sender's address, the receiver's address and the amount sent. Events emit by a smart contract can be used to build an index and make complex data queries.
+
 \section{Keccak256}
 Keccack256 is one of the most widely used hash functions in the Ethereum ecosystem. This hash function is used in the EVM and in Ethash, the PoW algorithm of Ethereum. Note that this hash function is named keccak256 and not SHA3 \footnote{https://en.wikipedia.org/wiki/SHA-3} even though they are nearly identical. The reason is that keccak256 is an old version of SHA3. SHA3 was slightly modified in August 2015, right after the launch of Ethereum in July 2015. Oracles use keccak256 to calculate the approval message from user inputs.
 
@@ -292,16 +295,31 @@ Finally, anyone can get a list of resale and swap offers.
 TODO: ADD SWAP DIAGRAM
 
 \section{Graph node}
+The graph node execute the graph protocol. It allows us to make complex data requests that would be very difficult to do directly on the blockchain.
 
-\subsection{Database}
+Let's start by understanding why it is difficult to do complex queries on the blockchain. There are two major limitations. The first is the gas limit. Indeed, like transactions, calls cannot have a complexity exceeding a certain limit. If the size of the returned data is too large, the call fails. However, this limitation is easily overcome if the data is simple. All you have to do is split a large query into several sub-queries. for example, if we want to obtain the balance of all the accounts of an ERC20 contract, we can query the first 100 balances in a first request, then the following 100 in a second request and so on. This requires two data structures on the smart contract, a list and a hashmap. The list stores users' balances and the hashmap maps a user's address to their balance's position in the list. This approach makes it possible to update a user's balance because the position of his balance is tracked by the hashmap and it is also possible to return all the balances by iterating over the list.
 
-\subsection{Oracles}
+With this approach, it is also possible to easily create simple filters. Let's go back to the previous example and assume that the smart contract stores two additional hashmaps. The first hashmap tracks premium accounts and the second hashmap tracks VIP accounts. If we want to get the balance of all premium and VIP accounts, we can simply iterate over the list of accounts and return only the accounts tracked by one of the two hashmaps.
 
-\subsubsection{Identifier}
+However, this approach is very limited because it is not possible to create queries as complex and rich as SQL would allow. There is not built-in primitive such as merge, join or filter to manipulate data. Therefore, if one wants to implement a complex query on a smart contract, he needs to implement by himself all these primitives. The code of the function would be very complicated to write and the request would fail as soon as the number of data becomes too large because the maximum gas limit would be reached.
 
-\subsubsection{Approver}
+The graph overcomes this limitation by creating an index outside the blockchain. The index is built through event emitted by transactions and can be queried through graphql \footnote{https://graphql.org/} queries.
 
-\subsubsection{Price feed}
+Here is an overview of how the indexing works. Let's take for example an ERC20 contract storing the balance of users. When a user transfers tokens to another user, he first creates a transaction with the following fields: his address, the recipient's address and the amount he wants to transfer. The user sends the transaction to the blockchain which executes it. When the transaction is mined an event containing the three preceding fields is emitted and logged. The graph node listens to this event and updates its index by decrementing the sender's balance and incrementing the receiver's balance.
+
+TODO: expliquer pourquoi j'utilise the graph plutot que des calls
+
+TODO: lister tous les evenements
+
+\section{Database}
+
+\section{Oracles}
+
+\subsection{Identifier}
+
+\subsection{Approver}
+
+\subsection{Price feed}
 
 %%%%%%%%%%%%%%%%
 \chapter{Security design and analysis}
@@ -353,11 +371,21 @@ experiments showcase the individual points you want to prove.
 This section is usually 5-10 pages.} \\
 
 \section{Experimental setup}
+Dell latitude 
+proc: i7-9850H
+ram: 16GB
+
 
 \section{Performance}
 
 \subsection{Transactions}
-Maximum batch size
+Sur Ethereum avec une erreur de +- 10 
+
+Maximum mint batch size = 300 
+
+Maximum burn batch size = 970
+
+Maximum update state size = 410
 
 \subsection{Calls (GraphQL)}
 
@@ -390,26 +418,6 @@ Additional costs induced by the signature (Measured done the 01.02.2022):
 \includegraphics[width=\textwidth]{identity_sig_price_overhead_ethereum_01_02_2022.PNG}
 
 \includegraphics[width=\textwidth]{exchange_sig_price_overhead_ethereum_01_02_2022.PNG}
-
-Estimated costs to run the backend, the database, the three oracles and the graph node on AWS:
-
-API Gateway:
-
-Database: 
-
-Backend:
-
-Identifier:
-
-Approver:
-
-Price feed:
-
-Graph node:
-
-
-
-
 
 %%%%%%%%%%%%%%%%%%%%%%
 \chapter{Limitation and future work}

@@ -36,7 +36,7 @@ describe("Ticketing", function () {
   const INITIAL_TOKEN_AMOUNT = precision.mul(10000);
   const EVENT_REGISTRATION_FEE = precision.mul(1000);
   const MINTING_FEE = precision.mul(1);
-  const batchSize = 100;
+  let batchSize: number;
   let ticketIds: BigNumberish[];
   let owners: any[];
 
@@ -121,7 +121,8 @@ describe("Ticketing", function () {
     expect(await identity.isRegistered(spectator2.address)).to.equal(true);
 
     // data
-    ticketIds = Array(100 - 1 + 1)
+    batchSize = await ticketing.BATCH_LIMIT();
+    ticketIds = Array(batchSize - 1 + 1)
       .fill(0)
       .map((_, idx) => 1 + idx);
     owners = Array(batchSize).fill(spectator1.address);
@@ -386,7 +387,7 @@ describe("Ticketing", function () {
     );
   });
 
-  it("Should prevent an organizer to mint a batch with a size bigger than 100", async function () {
+  it("Should prevent an organizer to mint a batch with a size bigger than the max batch size", async function () {
     organizerTix.increaseAllowance(ticketing.address, EVENT_REGISTRATION_FEE);
     await organizerTicketing.registerEvent(
       "test",
@@ -401,7 +402,7 @@ describe("Ticketing", function () {
         ticketIds.concat(100),
         owners.concat(spectator1.address)
       )
-    ).to.be.revertedWith("The batch is too big. BATCH_LIMIT = 100");
+    ).to.be.revertedWith("The batch is too big");
   });
 
   it("Should prevent an organizer to mint a batch of token if the ticketIds array size is not equal to the owners array size", async function () {
@@ -499,7 +500,7 @@ describe("Ticketing", function () {
     );
   });
 
-  it("Should prevent an organizer to burn a batch of token with a size bigger than 100", async function () {
+  it("Should prevent an organizer to burn a batch of token with a size bigger than the max batch size", async function () {
     organizerTix.increaseAllowance(ticketing.address, EVENT_REGISTRATION_FEE);
     await organizerTicketing.registerEvent(
       "test",
@@ -510,7 +511,7 @@ describe("Ticketing", function () {
     );
     await expect(
       organizerTicketing.burnBatch(ticketIds.concat(100))
-    ).to.be.revertedWith("The batch is too big. BATCH_LIMIT = 100");
+    ).to.be.revertedWith("The batch is too big");
   });
 
   it("Should allow the organizer to update the state of a token", async function () {
@@ -617,7 +618,7 @@ describe("Ticketing", function () {
     );
   });
 
-  it("Should prevent an organizer to update the state of a batch of token with a size bigger than 100", async function () {
+  it("Should prevent an organizer to update the state of a batch of token with a size bigger than the max batch size", async function () {
     organizerTix.increaseAllowance(ticketing.address, EVENT_REGISTRATION_FEE);
     await organizerTicketing.registerEvent(
       "test",
@@ -629,7 +630,7 @@ describe("Ticketing", function () {
     const newState =  await ticketing.TOKEN_SCANNED();
     const states = Array(batchSize + 1).fill(newState);
     await expect(organizerTicketing.updateTokenStateBatch(ticketIds.concat(100), states)).to.be.revertedWith(
-      "The batch is too big. BATCH_LIMIT = 100"
+      "The batch is too big"
     );
   });
 

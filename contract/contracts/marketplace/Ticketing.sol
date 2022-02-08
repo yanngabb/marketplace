@@ -29,7 +29,7 @@ contract Ticketing is Context, Ownable, ERC721, ITicketing {
     Counters.Counter private _eventIdTracker;
 
     // batch maximum size
-    uint8 public constant BATCH_LIMIT = 100;
+    uint32 public constant BATCH_LIMIT = 300;
 
     // event states
     bytes32 public constant EVENT_PENDING = keccak256("EVENT_PENDING");
@@ -191,7 +191,7 @@ contract Ticketing is Context, Ownable, ERC721, ITicketing {
     {
         require(
             owners.length <= BATCH_LIMIT && ticketIds.length <= BATCH_LIMIT,
-            "The batch is too big. BATCH_LIMIT = 100"
+            "The batch is too big"
         );
         require(
             owners.length == ticketIds.length,
@@ -243,7 +243,7 @@ contract Ticketing is Context, Ownable, ERC721, ITicketing {
     function burnBatch(uint256[] calldata tokenIds) public override {
         require(
             tokenIds.length <= BATCH_LIMIT,
-            "The batch is too big. BATCH_LIMIT = 100"
+            "The batch is too big"
         );
         for (uint256 i = 0; i < tokenIds.length; i = i + 1) {
             require(_exists(tokenIds[i]), "The token does not exists");
@@ -287,7 +287,7 @@ contract Ticketing is Context, Ownable, ERC721, ITicketing {
     ) public override {
         require(
             tokenIds.length <= BATCH_LIMIT && states.length <= BATCH_LIMIT,
-            "The batch is too big. BATCH_LIMIT = 100"
+            "The batch is too big"
         );
         require(
             tokenIds.length == states.length,
