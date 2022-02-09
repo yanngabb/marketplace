@@ -145,6 +145,7 @@ contract Ticketing is Context, Ownable, ERC721, ITicketing {
             "The state is not valid"
         );
         _events[eventId].state = state;
+        emit EventUpdate(eventId, state);
     }
 
     function mint(
@@ -278,7 +279,7 @@ contract Ticketing is Context, Ownable, ERC721, ITicketing {
         );
         _tokens[tokenId].state = state;
 
-        emit StateUpdate(tokenId, state);
+        emit TokenUpdate(tokenId, state);
     }
 
     function updateTokenStateBatch(
@@ -308,7 +309,7 @@ contract Ticketing is Context, Ownable, ERC721, ITicketing {
             );
             _tokens[tokenIds[i]].state = states[i];
 
-            emit StateUpdate(tokenIds[i], states[i]);
+            emit TokenUpdate(tokenIds[i], states[i]);
         }
     }
 

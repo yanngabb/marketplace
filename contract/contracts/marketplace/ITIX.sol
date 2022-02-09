@@ -11,6 +11,12 @@ import "../token/ERC20/IERC20.sol";
 
 interface ITIX is IERC20 {
     /*
+    events
+    */
+    event Purchase(address user, uint256 amount);
+    event Sale(address user, uint256 amount);
+
+    /*
     functions
     */
     function updateRates(uint256 usdRate, uint256 ethRate) external;

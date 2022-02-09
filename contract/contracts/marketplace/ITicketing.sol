@@ -29,13 +29,14 @@ interface ITicketing is IERC721 {
     events
     */
     event EventRegistration(uint256 eventId, address indexed owner);
+    event EventUpdate(uint256 eventId, bytes32 state);
     event Minting(
         uint256 indexed tokenId,
         uint256 indexed ticketId,
         address indexed owner
     );
     event Burning(uint256 indexed tokenId, uint256 indexed ticketId);
-    event StateUpdate(uint256 indexed tokenId, bytes32 indexed state);
+    event TokenUpdate(uint256 indexed tokenId, bytes32 indexed state);
 
     /*
     functions

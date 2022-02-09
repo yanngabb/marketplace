@@ -86,12 +86,14 @@ contract TIX is Context, Ownable, ERC20, ITIX {
     //TODO: replace the three following functions by an AMM
     function buy() external payable override {
         _mint(_msgSender(), msg.value * _ethRate);
+        emit Purchase(_msgSender(), msg.value * _ethRate);
     }
 
     function sell(uint256 amount) external override {
         _burn(_msgSender(), amount);
         (bool success, ) = _msgSender().call{value: amount / _ethRate}("");
         require(success, "Failed to send Ether");
+        emit Sale(_msgSender(), amount);
     }
 
     function getETHBalance()

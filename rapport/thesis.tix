@@ -160,7 +160,7 @@ ECDSA, Elliptic Curve Digital Signature Algorithm, is an algorithm used to digit
 As mentioned earlier, smart contracts do not have access to data stored outside of the blockchain. Therefore, blockchain needs a way to bring data securely onto the chain. This is the role of an oracle. It guarantees the authenticity and integrity of this data so that the blockchain can access off-chain data securely without compromising its security.
 
 \section{Graph protocol}
-The Graph \footnote{https://thegraph.com/docs/en/about/introduction/} is a protocol used to index blockchain and smart contracts. It is very useful because it allows building and maintaining off-chain indexes. These indexes can then be used to obtain information about the state of the blockchain or the a smart contracts, for example the balance of users in an ERC20 smart contract. Building an off-chain index is much more interesting than building an on-chain index because it simplifies the smart contract a lot. This is because there is no need to create and maintain complex data structures in the smart contract in order to be able to query arbitrary data, such as getting all balances above a certain amount. It also allows to query data in bulk, which is not possible with a blockchain call due to the gas limit. Note that the indexes are stored in a traditional database such as Postgres.
+The Graph \footnote{https://thegraph.com/docs/en/about/introduction/} is a protocol used to index blockchain and smart contracts. It is very useful because it allows building and maintaining off-chain indexes. These indexes can then be used to obtain information about the state of the blockchain or the a smart contracts, for example to get the balance of all the users in an ERC20 smart contract. Building an off-chain index is much more interesting than building an on-chain index because it simplifies the smart contract a lot. This is because there is no need to create and maintain complex data structures in the smart contract in order to be able to query arbitrary data, such as getting all balances above a certain amount. It also allows to query data in bulk, which is not possible with a blockchain call due to the gas limit. Note that the indexes are stored in a traditional database such as Postgres.
 
 %%%%%%%%%%%%%%%%%%%%%%
 \chapter{Related Work}
@@ -276,7 +276,7 @@ The Exchange smart contract allows the spectator to resell or swap their ticket 
 
 Let's start with ticket resale. The resale takes place in two stages. In the first stage the seller creates a resale offer and in the second stage a buyer accepts the offer.
 
-To create the resale offer, the seller must specify which token they want to resell and at what price in USD. If he wishes, he can specify an optional buyer. By specifying an optional buyer, only this person can accept the resale offer. If someone else tries to accept the offer, the transaction is reverted. The seller must also attach the approval message signed by the Approver Oracle. The transaction succeeds if the following conditions are met. There is no existing offer to resell this token. There is no existing swap offer for this token. The initiator of the transaction is the owner of the token. The price is not negative. The optional buyer, if defined, is a registered viewer. The approval message is valid and has been signed by the Approver Oracle. Note that it is possible to cancel a resale offer as long as it has not yet been accepted.
+To create the resale offer, the seller must specify which token they want to resell and at what price in USD. If he wishes, he can specify an optional buyer. By specifying an optional buyer, only this person can accept the resale offer. If someone else tries to accept the offer, the transaction is reverted. The seller must also attach the approval message signed by the Approver Oracle. The transaction succeeds if the following conditions are met. There is no existing offer to resell this token. There is no existing swap offer for this token. The initiator of the transaction is the owner of the token. The price is not negative. The optional buyer, if defined, is a registered spectator. The approval message is valid and has been signed by the Approver Oracle. Note that it is possible to cancel a resale offer as long as it has not yet been accepted.
 
 To accept the resale offer, the buyer must specify which token they wish to purchase and approve the smart contract to transfer an amount in TIX equivalent to the resale price. Note that the sale price is specified in USD but the transaction is made in TIX. To find out how many TIXs need to be approved, the buyer can request the current resale price from the smart contract by providing the token ID of the ticket they wish to purchase. The transaction succeeds if the following conditions are met. A resale offer for the token exists. The buyer is a registered spectator. The buyer is the optional buyer, if specified. The approved amount is sufficient to satisfy the resale.
 
@@ -297,7 +297,7 @@ TODO: ADD SWAP DIAGRAM
 \section{Graph node}
 The graph node execute the graph protocol. It allows us to make complex data requests that would be very difficult to do directly on the blockchain.
 
-Let's start by understanding why it is difficult to do complex queries on the blockchain. There are two major limitations. The first is the gas limit. Indeed, like transactions, calls cannot have a complexity exceeding a certain limit. If the size of the returned data is too large, the call fails. However, this limitation is easily overcome if the data is simple. All you have to do is split a large query into several sub-queries. for example, if we want to obtain the balance of all the accounts of an ERC20 contract, we can query the first 100 balances in a first request, then the following 100 in a second request and so on. This requires two data structures on the smart contract, a list and a hashmap. The list stores users' balances and the hashmap maps a user's address to their balance's position in the list. This approach makes it possible to update a user's balance because the position of his balance is tracked by the hashmap and it is also possible to return all the balances by iterating over the list.
+Let's start by understanding why it is difficult to do complex queries on the blockchain. There are two major limitations. The first is the gas limit. Indeed, like transactions, calls cannot have a complexity exceeding a certain limit. If the size of the returned data is too large, the call fails. However, this limitation is easily overcome if the data is simple. All you have to do is split a large query into several sub-queries. For example, if we want to obtain the balance of all the accounts of an ERC20 contract, we can query the first 100 balances in a first request, then the following 100 in a second request and so on. This requires two data structures on the smart contract, a list and a hashmap. The list stores users' balances and the hashmap maps a user's address to their balance's position in the list. This approach makes it possible to update a user's balance because the position of his balance is tracked by the hashmap and it is also possible to return all the balances by iterating over the list.
 
 With this approach, it is also possible to easily create simple filters. Let's go back to the previous example and assume that the smart contract stores two additional hashmaps. The first hashmap tracks premium accounts and the second hashmap tracks VIP accounts. If we want to get the balance of all premium and VIP accounts, we can simply iterate over the list of accounts and return only the accounts tracked by one of the two hashmaps.
 
@@ -307,17 +307,27 @@ The graph overcomes this limitation by creating an index outside the blockchain.
 
 Here is an overview of how the indexing works. Let's take for example an ERC20 contract storing the balance of users. When a user transfers tokens to another user, he first creates a transaction with the following fields: his address, the recipient's address and the amount he wants to transfer. The user sends the transaction to the blockchain which executes it. When the transaction is mined an event containing the three preceding fields is emitted and logged. The graph node listens to this event and updates its index by decrementing the sender's balance and incrementing the receiver's balance.
 
-TODO: expliquer pourquoi j'utilise the graph plutot que des calls
-
-TODO: lister tous les evenements
+Now that we understand why it is difficult to make complex queries or obtain bulk data, let's look at its use in our system. The graph node maintains three indexes. The first stores all user information, i.e. address, group, balance in TIX, TIX allowance to Ticketing contract, TIX allowance to Exchange contract (only for the spectator). The second stores all event information, i.e. event ID, organizer, name, location, opening date and time, closing date and time, state, number of tickets. The third stores all ticket information, i.e. token ID, ticket ID, event ID, owner, state, status (on swap / on resale). To build and maintain these three indexes, the graph node listens to events sent by the four smart contracts. The list of events can be found in the \hyperref[sec:appendix_a]{Appendix A}.
 
 \section{Database}
+The database has three uses. It stores the data of the organizers and the spectators, i.e. the name, the first name, the address of residence, the email address and the Ethereum address. It stores the transfer and resale rules as well as the data necessary for their application. Finally, it stores the indexes created by the graph protocol.
 
 \section{Oracles}
+Oracles play a crucial role in the system. The Oracle Identifier and Approver allow you to execute business logic outside the blockchain and verify the result on the blockchain. The Price feed oracle is used to securely bring the price of TIX against USD and ETH on the blockchain.
+
+It should be noted that the oracles all have a pair of private/public keys. These keys are used to sign transactions and messages.
+
+We explained previously that a signed message was returned by an oracle if the operation is approved. Now let's see how this message is created. Creation takes place in two phases. The first is to hash the arguments supplied by the user. To do this, the keccak256 hash function is used. Once the hash of the arguments has been calculated, the oracle creates the signature from the private key of the oracle and the hash thanks to ECDSA.
 
 \subsection{Identifier}
+The Identifier oracle makes it possible to verify the identity of organizers and spectators who wish to register, to store user information on the database and to issue identification proofs allowing users to register on the Identity contract.
+
+At the moment, the oracle only verifies the Ethereum address that the user provides. To do this, the oracle sends a challenge that the user must sign and return to the oracle. The verification is successful if the Oracle manages to verify that the message has been signed by the private key corresponding to the address provided by the user. Note that, as the name suggests, the oracle should also verify the identity of the user. The verification mechanism is not implemented because outside the scope of the project. We therefore assume that the oracle performs an identity verification similar to that carried out during the onboarding of Coinbase, Binance or Swissborg, i.e. the user sends photos of his identity card and his face which are then verified thanks to machine learning.
+
+Once the verification is successful, the oracle saves the information that the user has provided and issues a proof of identification built from the Ethereum address and the group to which the user belongs.
 
 \subsection{Approver}
+
 
 \subsection{Price feed}
 
@@ -462,6 +472,56 @@ advances the status quo.} \\
 \printbibliography
 
 \appendix
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{List of events}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\label{sec:appendix_a}
+
+The structure of an event is the following: 
+\begin{verbatim}
+EventName(typeOfFirstElt nameOfFirstElt, typeOfSecondElt nameOfSecondElt, ...)
+\end{verbatim}
+
+
+
+\paragraph{Identity}
+\begin{verbatim}
+Registation(address user, bytes32 class, bytes32 hash, bytes signature);
+Unregistration(address user);
+Revocation(address user);
+\end{verbatim}
+
+\paragraph{TIX}
+\begin{verbatim}
+Purchase(address user, uint256 amount);
+Sale(address user, uint256 amount);
+Transfer(address from, address to, uint256 value);
+Approval(address owner, address spender, uint256 value);
+\end{verbatim}
+
+\paragraph{Ticketing}
+\begin{verbatim}
+EventRegistration(uint256 eventId, address owner);
+EventUpdate(uint256 eventId, bytes32 state);
+Minting(uint256 tokenId, uint256 ticketId, address owner);
+Burning(uint256 tokenId, uint256 ticketId);
+TokenUpdate(uint256 tokenId, bytes32 state);
+Transfer(address from, address to, uint256 tokenId);
+Approval(address owner, address approved, uint256 tokenId);
+\end{verbatim}
+
+\paragraph{Exchange}
+\begin{verbatim}
+CreateResale(uint256 tokenId, uint256 price, address optionalBuyer);
+CancelResale(uint256 tokenId);
+AcceptResale(address seller, address buyer, uint256 tokenId, uint256 price);
+CreateSwap(uint256 tokenId, uint256 eventIdOfWantedToken, address optionalParticipant);
+CancelSwap(uint256 tokenId);
+AcceptSwap(address creator, address acceptor, uint256 creatorTokenId, 
+           uint256 acceptorTokenId);
+\end{verbatim}
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Risk analysis}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
