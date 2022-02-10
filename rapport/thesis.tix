@@ -203,19 +203,6 @@ This section aims to provide an overview of the main components and their intero
 
 \includegraphics[width=\textwidth]{architecture_overview.png}
 
-\begin{description} 
-    \item \textbf{Identity smart contract}: It allows organizers and spectators to register and unregister. It allows NFTiX to revoke a user who would have an inappropriate behavior. He defines and applies the access control policy. It stores the address of registered users. It stores the public key of the oracle identifier so that it can be checked as evidence when registering an organizer or a spectator.
-    \item \textbf{TIX smart contract}: It keeps track of the owners of the TIX token. The TIX token is the utility token of NFTiX.
-    \item \textbf{Ticketing smart contract}: It stores the information of the events and of the digital tickets of the organizers. It keeps track who is the owner of each ticket. And, it exposes several function that allows the organizers to update the information of their events and their tickets.
-    \item \textbf{Exchange smart contract}: It allows spectators to resale or to swap tickets. It works hand in hand with the three other contracts and the approver oracle to provide to the spectators a secure and regulated marketplace.
-    \item \textbf{Identifier oracle}: It verifies users' information during the registration process and creates registration proofs that can be used by the user to register their Ethereum address on the Identity smart contract.
-    \item \textbf{Approver oracle}: It verifies user's transactions (resales, swaps) against the rules defined by the organizers and create approval proofs that can be used by the user to send exchange or swap transactions to the Exchange smart contract.
-    \item \textbf{Price feed oracle}: It periodically sends the price in USD of the Ethereum and the TIX.
-    \item \textbf{Scanner oracle}: TODO
-    \item \textbf{Graph node}: It indexes the four smart contracts and exposes an endpoint that accepts graphql requests.
-    \item \textbf{Database}: It stores the indexed data of the graph node and the users' data.
-\end{description}
-
 \section{Ethereum blockchain}
 The Ethereum blockchain is the cornerstone of the system. It is it who is responsible for operating the smart contacts that implement the business logic.
 
@@ -309,15 +296,17 @@ Here is an overview of how the indexing works. Let's take for example an ERC20 c
 
 Now that we understand why it is difficult to make complex queries or obtain bulk data, let's look at its use in our system. The graph node maintains three indexes. The first stores all user information, i.e. address, group, balance in TIX, TIX allowance to Ticketing contract, TIX allowance to Exchange contract (only for the spectator). The second stores all event information, i.e. event ID, organizer, name, location, opening date and time, closing date and time, state, number of tickets. The third stores all ticket information, i.e. token ID, ticket ID, event ID, owner, state, status (on swap / on resale). To build and maintain these three indexes, the graph node listens to events sent by the four smart contracts. The list of events can be found in the \hyperref[sec:appendix_a]{Appendix A}.
 
+TODO: ADD FLOW DIAGRAM
+
 \section{Database}
 The database has three uses. It stores the data of the organizers and the spectators, i.e. the name, the first name, the address of residence, the email address and the Ethereum address. It stores the transfer and resale rules as well as the data necessary for their application. Finally, it stores the indexes created by the graph protocol.
 
 \section{Oracles}
-Oracles play a crucial role in the system. The Oracle Identifier and Approver allow you to execute business logic outside the blockchain and verify the result on the blockchain. The Price feed oracle is used to securely bring the price of TIX against USD and ETH on the blockchain.
+Oracles play a crucial role in the system. The Oracle Identifier and Approver allow us to execute business logic outside the blockchain and verify the result on the blockchain. The Price feed oracle is used to securely bring the price of TIX against USD and ETH on the blockchain.
 
 It should be noted that the oracles all have a pair of private/public keys. These keys are used to sign transactions and messages.
 
-We explained previously that a signed message was returned by an oracle if the operation is approved. Now let's see how this message is created. Creation takes place in two phases. The first is to hash the arguments supplied by the user. To do this, the keccak256 hash function is used. Once the hash of the arguments has been calculated, the oracle creates the signature from the private key of the oracle and the hash thanks to ECDSA.
+We explained previously that a signed message was returned by an oracle if the operation is approved. We also call this signed message a proof because the oracle proves that it has done its due diligence. Now let's see how this message is created. Creation takes place in two phases. The first is to hash the arguments supplied by the user. To do this, the keccak256 hash function is used. Once the hash of the arguments has been calculated, the oracle creates the signature from the private key of the oracle and the hash thanks to ECDSA.
 
 \subsection{Identifier}
 The Identifier oracle makes it possible to verify the identity of organizers and spectators who wish to register, to store user information on the database and to issue identification proofs allowing users to register on the Identity contract.
@@ -326,40 +315,56 @@ At the moment, the oracle only verifies the Ethereum address that the user provi
 
 Once the verification is successful, the oracle saves the information that the user has provided and issues a proof of identification built from the Ethereum address and the group to which the user belongs.
 
-\subsection{Approver}
+TODO: ADD FLOW DIAGRAM
 
+\subsection{Approver}
+The Approver Oracle is responsible for verifying that all ticket transactions initiated by spectators comply with the rules imposed by the organizers and for issuing proofs of approval allowing spectators to carry out resale and swap transactions.
+
+For a resale transaction, the proof is built from the address of the ticket owner, the token ID, the resale price and the address of the optional buyer. For a swap transaction, the proof is constructed from the address of the ticket owner, the token ID of the ticket offered, the event ID of the wanted ticket and the address of the optional buyer. Note that if the optional buyer is not specified, address zero is used to construct the proof.
+
+The approbation procedure of a transaction works like this. First, the spectator sends a transaction approval request to the Approver oracle providing it with the data that will be used to construct the transaction. The oracle verifies that the transaction respects the rules and issues the proof of approval. The spectator constructs the transaction with the data that he transmitted to the oracle and with the proof that the oracle returned to him. Finally, it sends the transaction to the blockchain which will be processed by the Exchange smart contract.
+
+TODO: ADD FLOW DIAGRAM
 
 \subsection{Price feed}
+The price feed oracle regularly sends the price of TIX against USD and ETH to the TIX smart contract. As a reminder, smart contracts cannot communicate with the outside world and therefore the TIX smart contract has no way of knowing the price of the TIX if it is not transmitted to it.
+
+This oracle works differently from the other two oracles. It communicates directly with the blockchain and therefore does not need to issue proofs. Indeed, as the transactions that the oracle sends are signed, the smart contract only needs to verify that the initiator of the transaction is the price feed oracle in order to ensure that the price update is legitimate. Note that the TIX smart contract stores the address of the oracle in order to verify that the transaction comes from it and not from a malicious user.
 
 %%%%%%%%%%%%%%%%
-\chapter{Security design and analysis}
+\chapter{Security}
 %%%%%%%%%%%%%%%%
 
+\section{Security design}
+In this section we explain a few point about the security of the system.
 
-Initial setup: the smart contract need to know the public key of the oracles
+\subsection{Inheritance of Ethereum security}
+It should be noted that most of the business logic is executed on the blockchain by the four smart contracts. This particular point is very important because it allows the system to inherit the security of the blockchain and bring confidence in the system to users.
 
-expliquer que l'interoperabilité des smart contract permet de construire un access control efficace. Exemple: un specateur ne peut transferer un ticket qu'a un utilisateur enregistré
+The implementation of the smart contracts is visible. Indeed, it is possible to decompile a smart contract and watch what it does. Therefore, anyone can verify that the contracts do what they are supposed to do and that there are no bugs. Note that this visibility is a very good thing because it forces dapp developers to properly test their code and not rely on security by obfuscation.
 
+The history of all user actions is recorded on the blockchain and is unalterable. Indeed, as soon as a transaction is mined, it is registered on the blockchain and it is impossible to delete it (unless you control more than 51\% of the network). Therefore, if anyone wants to try to attack the system, they must do so publicly. Sooner or later, the illegal operations will be noticed by monitoring tools or escalated by a user who notices that his tickets have disappeared. 
 
+Another very interesting advantage of running business logic on the blockchain is that there is no single point of failure. Indeed, the blockchain is decentralized and therefore managed by many different actors on different infrastructures and in different places. If one of the actors has a problem and is no longer able to operate correctly, it is not a problem because the other actors continue to operate and provide the service. Furthermore, this properties makes it very difficult to take control and manipulate the blockchain. Indeed, to be able to control the blockchain, it is necessary to be able to control more than 51\% of the actors which is very difficult to do due to the decentralized and heterogeneous nature of the actors. Of course, zero risk does not exist, but it should be noted that Ethereum has never been hacked and is certainly one of the most secure decentralized systems of the moment.
 
-\section{Inheritance of Ethereum security}
-All the business logic is on-chain
+\subsection{Tamper-proof inputs}
+As we mentioned earlier, as much of the business logic as possible is on the blockchain so that it inherits its security. However, we need to use oracles in order to run business logic and manipulate data that cannot be on the blockchain. The approach we propose makes it possible to ensure the authenticity and integrity of the data sent on the blockchain because it is based on cryptography which is in theory not breakable. Therefore, as long as the oracles and the database are tamper-proof, all data entering the blockchain is secure.
 
-\section{Non-custodial design}
-The users are the owner of the assets and the system cannot manipulate the users' assets
+\subsection{Non-custodial design}
+We have chosen a non-custodial design, i.e. the keys of the Ethereum wallets are held by the users and not by the system, so that the users are really the owner of their asset and that only they can manipulate them. This approach makes it possible not to have all the keys stored in the same place, which increases the attack surface because there are more potential targets but which also drastically reduces the risk of a successful attack because to have a strong influence on the system, one must be able to compromise a large number of keys.
 
-\section{Tamper-proof inputs}
-Crypto ensures integrity, authenticity, non-repudiation of off-chain data sent by the oracles to the blockchain
+\section{Threat model}
+The design we propose is based on several assumptions. The first assumption is that the organizers and operators of the system are not malicious. Indeed, organizers have the ability to delete tickets arbitrarily and system operators can revoke a user at will. Nothing prevents them from doing this kind of actions. However, we assume that this assumption is reasonable as it is unlikely that they will commit such actions. Indeed, they have more to lose than to gain. Their reputation and trust in the system would be damaged and this would have a direct impact on their income.
 
-\section{Treat model}
-According to the above sections, we can now state the threat model
+The second assumption is that the blockchain is considered completely secure and therefore trustworthy. Thanks to the decentralized nature of the blockchain, this assumption is reasonable. Indeed, it is difficult to attack the blockchain. To manipulate it, one must be able to take control of more than 51\% of the network or be able to break the cryptographic primitives on which it is based. It is highly unlikely that this will happen.
 
-Link to the risk analysis
+The third assumption is that the oracles private key is not accessible by anyone Therefore only oracles can generate valid proofs and update the price of the TIX. This assumption requires that the oracles and the infrastructure on which the oracles run are secure. This requires intensive testing and monitoring of this part of the system which, I remind you, is crucial for having a regulated system. We believe that this assumption is reasonable because the web as we know it is based on this same assumption.
 
-\section{Risk acceptance and assumptions}
-Distributed oracles, such as chainlink, needed to avoid single point of failure and secure off-chain computation
+Finally, we assume that the code of oracles and smart contracts does not contain vulnerabilities. It is sadely not possible to ensure that a code does not contain any flaws. However, we believe that due to the relatively low complexity of the system, it is possible to test the code sufficiently in order to have a high level of confidence in its security.
 
-No censorship resistance
+The design based on these four assumptions ensures that the business logic is applied as it should be and that users cannot deviate from the protocol. If they try, their actions will be denied. Let's take for example an malicious user who seeks to make a resale that does not respect the rules of resale. To perform this operation, he must obtain proof of approval from the oracle. As the resale is illegal the oracle will refuse to provide proof. The user cannot forge a false proof because he does not have access to the private key of the oracle. The user cannot attack the smart contract because we assume that it has been sufficiently tested so that it does not contain any vulnerability. The user cannot attack the blockchain either because we assume that it cannot be manipulated.
+
+Finally, it should be noted that if a malicious user managed to find a flaw and exploit it, these actions would be visible because the blockchain records all the operations that are carried out. For example, suppose someone has noticed a vulnerability in the code of a smart contract that allows him to transfer any ticket, even if it does not belong to him. This flaw allows him to acquire all the tickets he wants. However, if he uses this flaw and transfer ticket to himself he would automatically unmask himself. In addition, it is possible to undo his actions. Indeed, the organiser can delete the stolen ticket and recreate a new one for the user who has been stolen. Of course, it is also necessary to fix the flaw otherwise the malicious user could start again.
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Implementation}
@@ -454,6 +459,13 @@ Reward: liquidity pool storing a percentage of each trade. This pool is then red
 etc
 
 \section{Use closing date and CLAIMED state to uniquely claim or automatically generate ticket NFT collectible once the event is over}
+
+\section{Decentralized oracles}
+Distributed oracles, such as chainlink, needed to avoid single point of failure, secure off-chain computation and censorship resistance
+
+But it also allows us to stop any operation in case of bug and prevent malicious behavior
+
+MPC is better
 
 
 
