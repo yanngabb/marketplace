@@ -67,14 +67,18 @@ interface ITicketing is IERC721 {
 
     function burnBatch(uint256[] calldata tokenIds) external;
 
-    function updateTokenState(
-        uint256 tokenId,
-        bytes32 state
-    ) external;
+    function updateTokenState(uint256 tokenId, bytes32 state) external;
 
     function updateTokenStateBatch(
         uint256[] calldata tokenIds,
         bytes32[] calldata states
+    ) external;
+
+    function externallyApprovedTransfer(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory signature
     ) external;
 
     function isExistingEvent(uint256 eventId) external view returns (bool);

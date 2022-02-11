@@ -9,6 +9,7 @@ pragma solidity ^0.8.0;
 
 import "../utils/Context.sol";
 import "../utils/Counters.sol";
+import "../utils/cryptography/ECDSA.sol";
 import "../access/Ownable.sol";
 import "../token/ERC721/ERC721.sol";
 import "./IIdentity.sol";
@@ -224,10 +225,7 @@ contract Ticketing is Context, Ownable, ERC721, ITicketing {
         }
     }
 
-    function burn(uint256 tokenId)
-        public
-        override
-    {
+    function burn(uint256 tokenId) public override {
         require(_exists(tokenId), "The token does not exists");
         require(
             _events[_tokens[tokenId].eventId].organizer == _msgSender(),
@@ -242,10 +240,7 @@ contract Ticketing is Context, Ownable, ERC721, ITicketing {
     }
 
     function burnBatch(uint256[] calldata tokenIds) public override {
-        require(
-            tokenIds.length <= BATCH_LIMIT,
-            "The batch is too big"
-        );
+        require(tokenIds.length <= BATCH_LIMIT, "The batch is too big");
         for (uint256 i = 0; i < tokenIds.length; i = i + 1) {
             require(_exists(tokenIds[i]), "The token does not exists");
             require(
@@ -261,10 +256,7 @@ contract Ticketing is Context, Ownable, ERC721, ITicketing {
         }
     }
 
-    function updateTokenState(uint256 tokenId, bytes32 state)
-        public
-        override
-    {
+    function updateTokenState(uint256 tokenId, bytes32 state) public override {
         require(_exists(tokenId), "The token does not exists");
         require(
             _events[_tokens[tokenId].eventId].organizer == _msgSender(),
@@ -313,6 +305,49 @@ contract Ticketing is Context, Ownable, ERC721, ITicketing {
         }
     }
 
+    function externallyApprovedTransfer(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory signature
+    ) public override {
+        // check requirements
+        require(
+            _identityContract.isSpectator(to),
+            "You cannot transfer a ticket to an unregisterd address"
+        );
+        require(
+            block.timestamp < _events[_tokens[tokenId].eventId].openingDate,
+            "Transfer impossible. The event is already started"
+        );
+        require(
+            _events[_tokens[tokenId].eventId].state == EVENT_OPEN,
+            "Transfer impossible. The event is not yet open or cancelled"
+        );
+        require(
+            _tokens[tokenId].state == TOKEN_VALID,
+            "Transfer impossible, the token state is not valid"
+        );
+        require(
+            ownerOf(tokenId) == from,
+            "Transfer impossible, the from is not the owner of the token"
+        );
+
+        // check signature
+        bytes32 hash = keccak256(abi.encode(from, to, tokenId));
+        (address recovered, ECDSA.RecoverError error) = ECDSA.tryRecover(
+            ECDSA.toEthSignedMessageHash(hash),
+            signature
+        );
+        require(
+            error == ECDSA.RecoverError.NoError,
+            "Error while recovering signer address"
+        );
+        require(recovered == from, "The signer is invalid");
+
+        _transfer(from, to, tokenId);
+    }
+
     function transferFrom(
         address from,
         address to,
@@ -334,7 +369,10 @@ contract Ticketing is Context, Ownable, ERC721, ITicketing {
             _tokens[tokenId].state == TOKEN_VALID,
             "Transfer impossible, the token state is not valid"
         );
-        require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: transfer caller is not owner nor approved");
+        require(
+            _isApprovedOrOwner(_msgSender(), tokenId),
+            "ERC721: transfer caller is not owner nor approved"
+        );
 
         _transfer(from, to, tokenId);
     }
@@ -385,7 +423,10 @@ contract Ticketing is Context, Ownable, ERC721, ITicketing {
             _tokens[tokenId].state == TOKEN_VALID,
             "Transfer impossible, the token state is not valid"
         );
-        require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: transfer caller is not owner nor approved");
+        require(
+            _isApprovedOrOwner(_msgSender(), tokenId),
+            "ERC721: transfer caller is not owner nor approved"
+        );
         _safeTransfer(from, to, tokenId, _data);
     }
 

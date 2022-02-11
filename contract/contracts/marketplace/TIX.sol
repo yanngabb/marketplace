@@ -8,6 +8,7 @@ November 2021
 pragma solidity ^0.8.0;
 
 import "../utils/Context.sol";
+import "../utils/cryptography/ECDSA.sol";
 import "../access/Ownable.sol";
 import "../token/ERC20/ERC20.sol";
 import "./ITIX.sol";
@@ -94,6 +95,28 @@ contract TIX is Context, Ownable, ERC20, ITIX {
         (bool success, ) = _msgSender().call{value: amount / _ethRate}("");
         require(success, "Failed to send Ether");
         emit Sale(_msgSender(), amount);
+    }
+
+    function externallyApprovedTransfer (
+        address from,
+        address to,
+        uint256 amount,
+        bytes memory signature
+    ) public override {        
+        // check signature
+        bytes32 hash = keccak256(abi.encode(from, to, amount));
+        (address recovered, ECDSA.RecoverError error) = ECDSA.tryRecover(
+            ECDSA.toEthSignedMessageHash(hash),
+            signature
+        );
+        require(
+            error == ECDSA.RecoverError.NoError,
+            "Error while recovering signer address"
+        );
+        require(recovered == from, "The signer is invalid");
+
+        // transfer funds
+        _transfer(from, to, amount);
     }
 
     function getETHBalance()

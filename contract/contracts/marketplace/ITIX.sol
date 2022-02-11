@@ -21,17 +21,23 @@ interface ITIX is IERC20 {
     */
     function updateRates(uint256 usdRate, uint256 ethRate) external;
 
-    function getUsdRate() external view returns(uint256);
+    function getUsdRate() external view returns (uint256);
 
-    function getUsdPrice() external view returns(uint256);
+    function getUsdPrice() external view returns (uint256);
 
-    function calcUsdTokenAmount(uint256 usdAmount) external view returns(uint256);
+    function calcUsdTokenAmount(uint256 usdAmount)
+        external
+        view
+        returns (uint256);
 
-    function getEthRate() external view returns(uint256);
+    function getEthRate() external view returns (uint256);
 
-    function getEthPrice() external view returns(uint256);
+    function getEthPrice() external view returns (uint256);
 
-    function calcEthTokenAmount(uint256 ethAmount) external view returns(uint256);
+    function calcEthTokenAmount(uint256 ethAmount)
+        external
+        view
+        returns (uint256);
 
     function mint(address account, uint256 amount) external;
 
@@ -40,6 +46,13 @@ interface ITIX is IERC20 {
     function buy() external payable;
 
     function sell(uint256 amount) external;
+
+    function externallyApprovedTransfer(
+        address from,
+        address to,
+        uint256 amount,
+        bytes memory signature
+    ) external;
 
     function getETHBalance() external view returns (uint256);
 }

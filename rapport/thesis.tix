@@ -341,11 +341,11 @@ In this section we explain a few point about the security of the system.
 \subsection{Inheritance of Ethereum security}
 It should be noted that most of the business logic is executed on the blockchain by the four smart contracts. This particular point is very important because it allows the system to inherit the security of the blockchain and bring confidence in the system to users.
 
-The implementation of the smart contracts is visible. Indeed, it is possible to decompile a smart contract and watch what it does. Therefore, anyone can verify that the contracts do what they are supposed to do and that there are no bugs. Note that this visibility is a very good thing because it forces dapp developers to properly test their code and not rely on security by obfuscation.
+The implementation of the smart contracts is visible. Indeed, it is possible to decompile a smart contract and check what it does. Therefore, anyone can verify that the contracts do what they are supposed to do and that there are no bugs. Note that this visibility is a very good thing because it forces dapp developers to properly test their code and not rely on security by obfuscation.
 
 The history of all user actions is recorded on the blockchain and is unalterable. Indeed, as soon as a transaction is mined, it is registered on the blockchain and it is impossible to delete it (unless you control more than 51\% of the network). Therefore, if anyone wants to try to attack the system, they must do so publicly. Sooner or later, the illegal operations will be noticed by monitoring tools or escalated by a user who notices that his tickets have disappeared. 
 
-Another very interesting advantage of running business logic on the blockchain is that there is no single point of failure. Indeed, the blockchain is decentralized and therefore managed by many different actors on different infrastructures and in different places. If one of the actors has a problem and is no longer able to operate correctly, it is not a problem because the other actors continue to operate and provide the service. Furthermore, this properties makes it very difficult to take control and manipulate the blockchain. Indeed, to be able to control the blockchain, it is necessary to be able to control more than 51\% of the actors which is very difficult to do due to the decentralized and heterogeneous nature of the actors. Of course, zero risk does not exist, but it should be noted that Ethereum has never been hacked and is certainly one of the most secure decentralized systems of the moment.
+Another very interesting advantage of running business logic on the blockchain is that there is no single point of failure. Indeed, the blockchain is decentralized and therefore managed by many different actors on different infrastructures and in different places. If one of the actors has a problem and is no longer able to operate correctly, it is not a problem because the other actors continue to operate and provide the service. Furthermore, this properties makes it very difficult to take control and manipulate the blockchain and so our system. Indeed, to be able to control the blockchain, it is necessary to be able to control more than 51\% of the actors which is very difficult to do due to the decentralized and heterogeneous nature of the actors. Of course, zero risk does not exist, but it should be noted that Ethereum has never been hacked and is certainly one of the most secure decentralized systems of the moment.
 
 \subsection{Tamper-proof inputs}
 As we mentioned earlier, as much of the business logic as possible is on the blockchain so that it inherits its security. However, we need to use oracles in order to run business logic and manipulate data that cannot be on the blockchain. The approach we propose makes it possible to ensure the authenticity and integrity of the data sent on the blockchain because it is based on cryptography which is in theory not breakable. Therefore, as long as the oracles and the database are tamper-proof, all data entering the blockchain is secure.
@@ -358,11 +358,11 @@ The design we propose is based on several assumptions. The first assumption is t
 
 The second assumption is that the blockchain is considered completely secure and therefore trustworthy. Thanks to the decentralized nature of the blockchain, this assumption is reasonable. Indeed, it is difficult to attack the blockchain. To manipulate it, one must be able to take control of more than 51\% of the network or be able to break the cryptographic primitives on which it is based. It is highly unlikely that this will happen.
 
-The third assumption is that the oracles private key is not accessible by anyone Therefore only oracles can generate valid proofs and update the price of the TIX. This assumption requires that the oracles and the infrastructure on which the oracles run are secure. This requires intensive testing and monitoring of this part of the system which, I remind you, is crucial for having a regulated system. We believe that this assumption is reasonable because the web as we know it is based on this same assumption.
+The third assumption is that the oracles private key is not accessible by anyone Therefore only oracles can generate valid proofs and update the price of the TIX. This assumption requires that the oracles and the infrastructure on which the oracles run are secure. This requires intensive testing and monitoring of this part of the system which is crucial for having a regulated system. We believe that this assumption is reasonable because the web as we know it is based on this same assumption.
 
 Finally, we assume that the code of oracles and smart contracts does not contain vulnerabilities. It is sadely not possible to ensure that a code does not contain any flaws. However, we believe that due to the relatively low complexity of the system, it is possible to test the code sufficiently in order to have a high level of confidence in its security.
 
-The design based on these four assumptions ensures that the business logic is applied as it should be and that users cannot deviate from the protocol. If they try, their actions will be denied. Let's take for example an malicious user who seeks to make a resale that does not respect the rules of resale. To perform this operation, he must obtain proof of approval from the oracle. As the resale is illegal the oracle will refuse to provide proof. The user cannot forge a false proof because he does not have access to the private key of the oracle. The user cannot attack the smart contract because we assume that it has been sufficiently tested so that it does not contain any vulnerability. The user cannot attack the blockchain either because we assume that it cannot be manipulated.
+The design based on these four assumptions ensures that the business logic is applied as it should be and that users cannot deviate from the protocol. If they try, their actions will be denied. Let's take for example a malicious user who seeks to make a resale that does not respect the rules of resale. To perform this operation, he must obtain a proof of approval from the oracle. As the resale is illegal the oracle will refuse to provide the proof. The user cannot forge a false proof because he does not have access to the private key of the oracle. The user cannot attack the smart contract because we assume that it has been sufficiently tested so that it does not contain any vulnerability. The user cannot attack the blockchain either because we assume that it cannot be manipulated.
 
 Finally, it should be noted that if a malicious user managed to find a flaw and exploit it, these actions would be visible because the blockchain records all the operations that are carried out. For example, suppose someone has noticed a vulnerability in the code of a smart contract that allows him to transfer any ticket, even if it does not belong to him. This flaw allows him to acquire all the tickets he wants. However, if he uses this flaw and transfer ticket to himself he would automatically unmask himself. In addition, it is possible to undo his actions. Indeed, the organiser can delete the stolen ticket and recreate a new one for the user who has been stolen. Of course, it is also necessary to fix the flaw otherwise the malicious user could start again.
 
@@ -394,6 +394,19 @@ ram: 16GB
 \section{Performance}
 
 \subsection{Transactions}
+
+\subsubsection{Latency and throughput}
+It does not make really sense to measure the latency because it depends on several factor: validation time of the blockchain, congestion of the network etc,
+
+
+make a few scenario and show which part take the most time to execute (signature?, transaction mining?)
+
+
+Then based on the result try to estimate the latency and througput on ethereum et polygon
+estimation sur polygon
+estimation sur ethereum
+
+\subsubsection{Max batch size}
 Sur Ethereum avec une erreur de +- 10 
 
 Maximum mint batch size = 300 
@@ -402,9 +415,19 @@ Maximum burn batch size = 970
 
 Maximum update state size = 410
 
-\subsection{Calls (GraphQL)}
-
 \subsection{Signatures (Oracles)}
+
+\subsubsection{stat}
+cpu consumption
+memory consumption
+time amount
+
+
+
+faire les mesures pour 1000 - 10000 - 100000 - 1000000 -10000000
+
+
+
 Time to compute 100000 hashes: 15660.014899998903 milliseconds
 
 Average time to compute a single hashe: 0.15660014899998903 milliseconds
@@ -416,6 +439,10 @@ Average time to compute a single signature: 0.2845743719999865 milliseconds
 Time to compute 100000 hashes + signatures: 52324.1595999971 milliseconds
 
 Average time to compute a single hash + signature: 0.523241595999971 milliseconds
+
+\subsection{Calls (GraphQL)}
+
+\subsection{Database size}
 
 \section{Costs}
 General costs (Measured done the 01.02.2022):
@@ -439,35 +466,50 @@ Additional costs induced by the signature (Measured done the 01.02.2022):
 %%%%%%%%%%%%%%%%%%%%%%
 
 \section{Design optimization}
-A lot of transaction must be done in order to resale or swap a ticket: approve exchange to transfer the ticket, approve exchange to transfer TIX, create resale, accept resale. 
+Although the implementation shows that the design works, there is one point that is not satisfactory. When a spectator creates a resale offer, he must make two transactions. The first transaction authorizes the exchange contract to transfer the spectator's ticket. The second transaction creates the resale offer. The spectator who buys the ticket in resale must also make two transactions. The first gives the authorization to the Exchange contract to transfer the TIX and the second transaction accepts the resale offer.
 
-Solution1: use crypto, create off-chain proofs that authorizes the exchange to transfer TIX and ticket.
+The reason why it is necessary to make two transactions is linked to the operation of the ERC721 and ERC20 standard. To transfer an asset, you must either be the owner or have received the approval of its owner. Once the transfer is complete, the approval is withdrawn.
 
-Solution2: list the ticket in resale off-chain along with a proof of "I want to resale my ticket" of the seller 
+One solution to this problem would be to have the TIX contract and the Ticketing contract white list the address of the Exchange smart contract so that it does not need to be given prior approval.
+However, this approach is not a good idea because it blurs the line between the different smart contracts and their role. It opposes the blockchain philosophy which says that the end user must be the sole owner of these goods. Additionally, if the Exchange contract has a security hole, an attacker could potentially steal TIX. The principle of least privilege is not respected with this approach.
 
-Remark: not enough time to modify the system
+Here we propose an approach that might work. The idea is to use cryptography so that spectators can create off-chain evidence that authorizes the Exchange contract to transfer TIXs and tickets on their behalf. We also need to modify the ERC721 and ERC20 standards so that it accepts this new type of approval. Note that there is nothing new to build. We can construct proofs in the same way as those created by oracles. And the proof checking mechanism that is used to check proofs from oracles can be integrated into both standards to support this new type of approval. As with this approach it is no longer necessary to give the approval to transfer the TIX and the tickets, we halve the number of transactions to be made to carry out a resale.
+
+We can go even further in the process by needing to make a single transaction to make a resale. With the current design, when a viewer resells a ticket, they first ask the oracle to create proof of resale approval. Once he has this proof, he lists his ticket on the Exchange smart contract by creating a resale offer. However, it is not necessary to list the offer directly on the smart contract. This can be done off-chain in order to save a transaction. To do this, the seller must create a proof of resale authorization in the same way as the Approver oracle. This proof can then be used by a buyer to redeem the tickets.
+
+If we combine the two approaches, we offer the possibility of reselling a ticket by making a single transaction. Here is a high level description of the flow. The seller asks the oracle to create proof of resale approval. The seller creates two proofs. Proof of Resale Approval that authorizes a buyer to purchase their ticket and Proof of Transfer Approval that authorizes the Exchange Contract to transfer the ticket on their behalf. The buyer creates proof of transfer approval that authorizes the Exchange contract to transfer the TIX on their behalf. Finally, the seller creates a redemption transaction for the ticket that contains the four proofs and sends it to the blockchain. The smart contract checks that all authorizations are valid and executes the redemption operation.
+
+To go even further in the process, we could also aggregate the proofs into one in order to reduce the complexity of the verification of the proofs on the smart contract and therefore the transaction execution costs. To do this, we need to construct proofs that have homomorphic properties.
+
+\section{Time-based proof expiration}
+TODO
+
+Check that a timestamp is below a threshold like time-based transfer rules
+
+\section{payment splitter}
+TODO
+
+To better manage the splitting of money during the resale process and reduce the number of tix transfer proof
 
 \section{Proof of ownership and scanner oracle}
+An aspect that has not been addressed in this thesis is the management of the QR code that is scanned at the entrance of the event. TIXnGO uses encrypted QR codes which are revealed before the start of the event. The activation of the QR code can be done using bluetooth beacons. When the phone receives the signal from the beacon, it reveals the QR code. This can also be done with a time based activation. In this case, the QR code is activated a few hours before the start of the event.
 
-\section{Performance test on zkSync or StarkNet}
+The problem with this approach is that the QR code and the decryption key must be permanently stored on the user's phone because it is possible that the user is not able to access the internet once outside the entrance. Often, the quality of the mobile network is degraded because there are many people. Although it is possible to store the private key in the phone's secure enclave and extensively test the application code to ensure that it is very difficult to extract the QR code and use it at malicious purposes, this approach is not optimal.
 
-\section{TIX}
-gouvernance: The organizer could vote to add new features in the product
-
-Reward: liquidity pool storing a percentage of each trade. This pool is then redistributed to the user (Circle of virtue of the money)
-
-etc
-
-\section{Use closing date and CLAIMED state to uniquely claim or automatically generate ticket NFT collectible once the event is over}
+Another approach is to generate a QR code that depends on the ticket owner, i.e. if two people had the same ticket, they would see a different QR code. With this approach, it is not necessary to encrypt the QR code. This approach is relatively easy to set up and has already been tested by AlphaWallet. The approach consists in generating a proof of ownership attesting that the person holds the ticket. To do this, the person proves that he is the owner of the address holding the ticket. The proof is then used to construct the QR code. You can find more info here\footnote{https://medium.com/opensea/cryptotickets-the-first-blockchain-based-tickets-are-live-on-opensea-5a29d0223c3d}.
 
 \section{Decentralized oracles}
-Distributed oracles, such as chainlink, needed to avoid single point of failure, secure off-chain computation and censorship resistance
+As we mentioned above, oracles are centralized. This is not a good thing because it creates a single point of failure, it opens the door to censorship and it goes against the philosophy of decentralization. To overcome these problems, we could use a decentralized oracle such as Chainlink.
 
-But it also allows us to stop any operation in case of bug and prevent malicious behavior
+\section{Performance test on zkSync or StarkNet}
+The zk rollups, which in my opinion are the future of blockchain scalability, are becoming increasingly popular. It would be interesting to see how well the system would perform and what changes would need to be made to the system in order to make it work on these layer 2.
 
-MPC is better
+\section{TIX token features}
+For the moment, the TIX token has very little use and it could perfectly be replaced by ETH. Here are some ideas that might make it more useful.
 
+The TIX could be used as a governance token so that users can vote for new features in the application. For example, it would be possible to make a vote to determine if the spectators would like to have the possibility of claiming the souvenir ticket of an event in the form of NFT. The governance could also let the organizers vote for the next features they would like the development team to implement first.
 
+It would also be possible to create a reward pool that can be shared regularly between the most acidus users of the application or to people who discover security flaws in the system. The pool could be filled by taking a small commission on each resale of tickets.
 
 %%%%%%%%%%%%%%%%%%%%
 \chapter{Conclusion}

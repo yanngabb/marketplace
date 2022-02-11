@@ -11,11 +11,11 @@ interface IExchange {
     /*
     structures
     */
-    struct Resale {
+    struct ResaleStruc {
         uint256 price;
         address optionalBuyer;
     }
-    struct Swap {
+    struct SwapStruc {
         uint256 eventIdOfWantedToken;
         address optionalParticipant;
     }
@@ -47,6 +47,7 @@ interface IExchange {
         uint256 indexed creatorTokenId,
         uint256 indexed acceptorTokenId
     );
+    event Resale(uint256 tokenId, address buyer, address seller, address tixngo, address organizer, uint256 sellerShare, uint256 tixngoShare, uint256 organizerShare);
 
     /*
     functions
