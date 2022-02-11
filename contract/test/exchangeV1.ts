@@ -7,9 +7,9 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { Identity, TIX, Ticketing, Exchange } from "../typechain";
+import { Identity, TIX, Ticketing, ExchangeV1 } from "../typechain";
 
-describe("Exchange", function () {
+describe("ExchangeV1", function () {
   let signers;
   let tixngo: SignerWithAddress;
   let spectator1: SignerWithAddress;
@@ -32,9 +32,9 @@ describe("Exchange", function () {
   let spectator1Ticketing: Ticketing;
   let spectator2Ticketing: Ticketing;
   let Exchange;
-  let exchange: Exchange;
-  let spectator1Exchange: Exchange;
-  let spectator2Exchange: Exchange;
+  let exchange: ExchangeV1;
+  let spectator1Exchange: ExchangeV1;
+  let spectator2Exchange: ExchangeV1;
 
   const decimals = 18;
   const precision = ethers.utils.parseUnits("1", decimals);
@@ -74,7 +74,7 @@ describe("Exchange", function () {
       tixngo.address
     );
 
-    Exchange = await ethers.getContractFactory("Exchange");
+    Exchange = await ethers.getContractFactory("ExchangeV1");
     exchange = await Exchange.deploy(
       1,
       identity.address,

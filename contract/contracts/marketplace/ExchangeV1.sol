@@ -15,9 +15,9 @@ import "../token/ERC20/ERC20.sol";
 import "./IIdentity.sol";
 import "./ITicketing.sol";
 import "./ITIX.sol";
-import "./IExchange.sol";
+import "./IExchangeV1.sol";
 
-contract Exchange is Context, Ownable, IExchange {
+contract ExchangeV1 is Context, Ownable, IExchangeV1 {
     // exchange version
     uint8 public immutable version;
 
@@ -111,7 +111,7 @@ contract Exchange is Context, Ownable, IExchange {
         require(recovered == _approverAddress, "The signer is invalid");
 
         // create resale
-        _resales[tokenId] = Resale(price, optionalBuyer);
+        _resales[tokenId] = ResaleStruc(price, optionalBuyer);
         emit CreateResale(tokenId, price, optionalBuyer);
     }
 
@@ -145,7 +145,7 @@ contract Exchange is Context, Ownable, IExchange {
 
     // purchase a ticket on resale
     function acceptResale(uint256 tokenId) external override {
-        Resale memory resale = _resales[tokenId];
+        ResaleStruc memory resale = _resales[tokenId];
 
         // check input
         require(resale.price != uint256(0x0), "The token is not on resale");
@@ -186,80 +186,6 @@ contract Exchange is Context, Ownable, IExchange {
         // remove resale
         delete _resales[tokenId];
         emit AcceptResale(owner, _msgSender(), tokenId, price);
-    }
-
-    function resell(
-        uint256 tokenId,
-        address optionalBuyer,
-        address seller,        
-        uint256 sellerShare,
-        uint256 tixngoShare,
-        uint256 organizerShare,
-        bytes memory approverSignature,
-        bytes memory resaleOfferSignature,
-        bytes memory ticketTransferSignature,
-        bytes memory tixTransferToSellerSignature,
-        bytes memory tixTransferToTixngoSignature,
-        bytes memory tixTransferToOrganizerSignature
-    ) external override {
-        // check requirements
-        require(
-            _ticketingContract.ownerOf(tokenId) == seller,
-            "The token does not exist or the seller is not the owner of the token"
-        );
-        require(
-            _identityContract.isSpectator(_msgSender()),
-            "The buyer must be a registered user"
-        );
-        if (optionalBuyer != address(0x0)) {
-            require(
-                optionalBuyer == _msgSender(),
-                "The optional buyer address is different from the sender address"
-            );
-        }
-        require(sellerShare > uint256(0x0) && tixngoShare > uint256(0x0) && organizerShare > uint256(0x0), "The share cannot be negativ");
-        require(
-            _tixContract.allowance(_msgSender(), address(this)) >= sellerShare + tixngoShare + organizerShare,
-            "Not enough TIX to process the operation"
-        );
-
-        // compute hash
-        address organizerAddress = _ticketingContract.getEvent(_ticketingContract.getToken(tokenId).eventId).organizer;
-        bytes32 hash = keccak256(
-            abi.encode(tokenId, optionalBuyer, seller, _tixngoAddress, organizerAddress, sellerShare, tixngoShare, organizerShare)
-        );
-
-        // check approver signature
-        (address recovered, ECDSA.RecoverError error) = ECDSA.tryRecover(
-            ECDSA.toEthSignedMessageHash(hash),
-            approverSignature
-        );
-        require(
-            error == ECDSA.RecoverError.NoError,
-            "Error while recovering signer address"
-        );
-        require(recovered == _approverAddress, "The signer is invalid");
-
-        // check resale offer signature
-        (recovered, error) = ECDSA.tryRecover(
-            ECDSA.toEthSignedMessageHash(hash),
-            resaleOfferSignature
-        );
-        require(
-            error == ECDSA.RecoverError.NoError,
-            "Error while recovering signer address"
-        );
-        require(recovered == seller, "The signer is invalid");
-        
-        // transfer token
-        _ticketingContract.externallyApprovedTransfer(seller, _msgsender(), tokenId, ticketTransferSignature);
-
-        // transfer Funds
-        _tixContract.externallyApprovedTransfer(_msgSender(), seller, sellerShare, tixTransferToSellerSignature);
-        _tixContract.externallyApprovedTransfer(_msgSender(), tixngo, tixngoShare, tixTransferToTixngoSignature);
-        _tixContract.externallyApprovedTransfer(_msgSender(), organizer, organizerShare, tixTransferToOrganizerSignature);
-
-        emit Resale(tokenId, _msgSender(), seller, _tixngoAddress, organizerAddress, sellerShare, tixngoShare, organizerShare);
     }
 
     // swap a ticket on resale
@@ -321,7 +247,7 @@ contract Exchange is Context, Ownable, IExchange {
         require(recovered == _approverAddress, "The signer is invalid");
 
         // create swap
-        _swaps[tokenId] = Swap(eventIdOfWantedToken, optionalParticipant);
+        _swaps[tokenId] = SwapStruc(eventIdOfWantedToken, optionalParticipant);
         emit CreateSwap(tokenId, eventIdOfWantedToken, optionalParticipant);
     }
 
@@ -344,7 +270,7 @@ contract Exchange is Context, Ownable, IExchange {
         external
         override
     {
-        Swap memory swap = _swaps[creatorTokenId];
+        SwapStruc memory swap = _swaps[creatorTokenId];
 
         // check input
         require(
@@ -382,7 +308,7 @@ contract Exchange is Context, Ownable, IExchange {
         external
         view
         override
-        returns (Resale memory)
+        returns (ResaleStruc memory)
     {
         return _resales[tokenId];
     }
@@ -391,7 +317,7 @@ contract Exchange is Context, Ownable, IExchange {
         external
         view
         override
-        returns (Swap memory)
+        returns (SwapStruc memory)
     {
         return _swaps[tokenId];
     }

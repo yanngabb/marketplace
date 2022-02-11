@@ -313,6 +313,10 @@ contract Ticketing is Context, Ownable, ERC721, ITicketing {
     ) public override {
         // check requirements
         require(
+            ownerOf(tokenId) == from,
+            "Transfer impossible, the from is not the owner of the token"
+        );
+        require(
             _identityContract.isSpectator(to),
             "You cannot transfer a ticket to an unregisterd address"
         );
@@ -327,10 +331,6 @@ contract Ticketing is Context, Ownable, ERC721, ITicketing {
         require(
             _tokens[tokenId].state == TOKEN_VALID,
             "Transfer impossible, the token state is not valid"
-        );
-        require(
-            ownerOf(tokenId) == from,
-            "Transfer impossible, the from is not the owner of the token"
         );
 
         // check signature

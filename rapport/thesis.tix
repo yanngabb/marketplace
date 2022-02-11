@@ -265,6 +265,12 @@ Let's start with ticket resale. The resale takes place in two stages. In the fir
 
 To create the resale offer, the seller must specify which token they want to resell and at what price in USD. If he wishes, he can specify an optional buyer. By specifying an optional buyer, only this person can accept the resale offer. If someone else tries to accept the offer, the transaction is reverted. The seller must also attach the approval message signed by the Approver Oracle. The transaction succeeds if the following conditions are met. There is no existing offer to resell this token. There is no existing swap offer for this token. The initiator of the transaction is the owner of the token. The price is not negative. The optional buyer, if defined, is a registered spectator. The approval message is valid and has been signed by the Approver Oracle. Note that it is possible to cancel a resale offer as long as it has not yet been accepted.
 
+
+
+TODO: clarify that the optional buyer is used for P2P resale and a resale with an empty optional buyer is meant to be listed on the marketplace
+
+
+
 To accept the resale offer, the buyer must specify which token they wish to purchase and approve the smart contract to transfer an amount in TIX equivalent to the resale price. Note that the sale price is specified in USD but the transaction is made in TIX. To find out how many TIXs need to be approved, the buyer can request the current resale price from the smart contract by providing the token ID of the ticket they wish to purchase. The transaction succeeds if the following conditions are met. A resale offer for the token exists. The buyer is a registered spectator. The buyer is the optional buyer, if specified. The approved amount is sufficient to satisfy the resale.
 
 Note that a fee is taken on each resale. This fee is a percentage of the resale amount. The purpose of this fee is to cover the operating costs of NFTiX and to give a commission to the organizer of the event.
@@ -480,6 +486,12 @@ We can go even further in the process by needing to make a single transaction to
 If we combine the two approaches, we offer the possibility of reselling a ticket by making a single transaction. Here is a high level description of the flow. The seller asks the oracle to create proof of resale approval. The seller creates two proofs. Proof of Resale Approval that authorizes a buyer to purchase their ticket and Proof of Transfer Approval that authorizes the Exchange Contract to transfer the ticket on their behalf. The buyer creates proof of transfer approval that authorizes the Exchange contract to transfer the TIX on their behalf. Finally, the seller creates a redemption transaction for the ticket that contains the four proofs and sends it to the blockchain. The smart contract checks that all authorizations are valid and executes the redemption operation.
 
 To go even further in the process, we could also aggregate the proofs into one in order to reduce the complexity of the verification of the proofs on the smart contract and therefore the transaction execution costs. To do this, we need to construct proofs that have homomorphic properties.
+
+
+COMPARAISON DES DEUX APPROCHES: la première (si on enleve l'oracle) permet de créer une place de marché non régulé mais entièrement decentralisé, la deuxième permet de créer une place de marché réguler et plus pratique mais pas totalement decentralisé (cela peut être le cas avec des oracles decentralisés)
+
+
+
 
 \section{Time-based proof expiration}
 TODO

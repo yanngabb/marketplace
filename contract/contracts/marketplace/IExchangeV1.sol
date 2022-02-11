@@ -7,7 +7,7 @@ November 2021
 
 pragma solidity ^0.8.0;
 
-interface IExchange {
+interface IExchangeV1 {
     /*
     structures
     */
@@ -47,7 +47,16 @@ interface IExchange {
         uint256 indexed creatorTokenId,
         uint256 indexed acceptorTokenId
     );
-    event Resale(uint256 tokenId, address buyer, address seller, address tixngo, address organizer, uint256 sellerShare, uint256 tixngoShare, uint256 organizerShare);
+    event Resale(
+        uint256 tokenId,
+        address buyer,
+        address seller,
+        address tixngo,
+        address organizer,
+        uint256 sellerShare,
+        uint256 tixngoShare,
+        uint256 organizerShare
+    );
 
     /*
     functions
@@ -82,7 +91,7 @@ interface IExchange {
     function acceptSwap(uint256 creatorTokenId, uint256 acceptorTokenId)
         external;
 
-    function getResale(uint256 tokenId) external view returns(Resale memory);
+    function getResale(uint256 tokenId) external view returns (ResaleStruc memory);
 
-    function getSwap(uint256 tokenId) external view returns(Swap memory);
+    function getSwap(uint256 tokenId) external view returns (SwapStruc memory);
 }
