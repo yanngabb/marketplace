@@ -176,7 +176,7 @@ contract Ticketing is Context, Ownable, ERC721, ITicketing {
         uint256 tokenId = _tokenIdTracker.current();
         _mint(owner, tokenId);
         _tokens[tokenId] = _Token(eventId, ticketId, TOKEN_VALID);
-        emit Minting(tokenId, ticketId, owner);
+        emit Minting(eventId, tokenId, ticketId, owner);
 
         _tokenIdTracker.increment();
     }
@@ -219,7 +219,7 @@ contract Ticketing is Context, Ownable, ERC721, ITicketing {
             uint256 tokenId = _tokenIdTracker.current();
             _mint(owners[i], tokenId);
             _tokens[tokenId] = _Token(eventId, ticketIds[i], TOKEN_VALID);
-            emit Minting(tokenId, ticketIds[i], owners[i]);
+            emit Minting(eventId, tokenId, ticketIds[i], owners[i]);
 
             _tokenIdTracker.increment();
         }
