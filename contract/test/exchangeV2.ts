@@ -7,7 +7,13 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { Identity, TIX, Ticketing, ExchangeV2 } from "../typechain";
+import {
+  Identity,
+  TIX,
+  Ticketing,
+  ExchangeV2,
+  IExchangeV2,
+} from "../typechain";
 
 describe("ExchangeV2", function () {
   let signers;
@@ -36,12 +42,13 @@ describe("ExchangeV2", function () {
   let spectator1Exchange: ExchangeV2;
   let spectator2Exchange: ExchangeV2;
 
-  const decimals = 18;
-  const precision = ethers.utils.parseUnits("1", decimals);
-  const INITIAL_TOKEN_AMOUNT = precision.mul(10000);
-  const EVENT_REGISTRATION_FEE = precision.mul(1000);
-  const MINTING_FEE = precision.mul(1);
-  const PRICE = 100;
+  const DECIMALS = 18;
+  const PRECISION = ethers.utils.parseUnits("1", DECIMALS);
+  const INITIAL_TOKEN_AMOUNT = PRECISION.mul(10000);
+  const EVENT_REGISTRATION_FEE = PRECISION.mul(1000);
+  const MINTING_FEE = PRECISION.mul(1);
+  const USD_RESALE_PRICE = 100;
+  const RESALE_FEE_PERCENTAGE = 2;
 
   beforeEach(async function () {
     signers = await ethers.getSigners();
@@ -58,8 +65,8 @@ describe("ExchangeV2", function () {
       "TIX token",
       "TIX",
       priceFeed.address,
-      ethers.utils.parseUnits("1", decimals),
-      ethers.utils.parseUnits("1", decimals)
+      ethers.utils.parseUnits("1", DECIMALS),
+      ethers.utils.parseUnits("1", DECIMALS)
     );
     await tix.deployed();
 
@@ -146,1112 +153,204 @@ describe("ExchangeV2", function () {
     spectator2Exchange = exchange.connect(spectator2);
   });
 
-  it("Should allow a spectator to put a ticket on resale", async function () {
+  it("Should allow a spectator to purchase a ticket on resale", async function () {
+    // create event and ticket
     organizerTix.increaseAllowance(
       ticketing.address,
       EVENT_REGISTRATION_FEE.add(MINTING_FEE)
     );
-    await organizerTicketing.registerEvent(
-      "test",
-      "test",
-      1,
-      2,
-      await organizerTicketing.EVENT_OPEN()
-    );
-    await organizerTicketing.mint(1, 1, spectator1.address);
-    const hash = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator1.address, 1, PRICE, spectator2.address]
-      )
-    );
-    const signature = await approver.signMessage(ethers.utils.arrayify(hash));
-    await spectator1Exchange.createResale(
-      1,
-      PRICE,
-      spectator2.address,
-      hash,
-      signature
-    );
-    const resale = await exchange.getResale(1);
-    expect(resale.price).to.equal(PRICE);
-    expect(resale.optionalBuyer).to.equal(spectator2.address);
-  });
-
-  it("Should prevent a spectator to put a token on resale if the token is already on resale", async function () {
-    organizerTix.increaseAllowance(
-      ticketing.address,
-      EVENT_REGISTRATION_FEE.add(MINTING_FEE)
-    );
-    await organizerTicketing.registerEvent(
-      "test",
-      "test",
-      1,
-      2,
-      await organizerTicketing.EVENT_OPEN()
-    );
-    await organizerTicketing.mint(1, 1, spectator1.address);
-    const hash = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator1.address, 1, PRICE, ethers.constants.AddressZero]
-      )
-    );
-    const signature = await approver.signMessage(ethers.utils.arrayify(hash));
-    await spectator1Exchange.createResale(
-      1,
-      PRICE,
-      ethers.constants.AddressZero,
-      hash,
-      signature
-    );
-    await expect(
-      spectator1Exchange.createResale(
-        1,
-        PRICE,
-        ethers.constants.AddressZero,
-        hash,
-        signature
-      )
-    ).to.be.revertedWith("The token is already on resale");
-  });
-
-  it("Should prevent a spectator to put a token on resale if the token is already on swap", async function () {
-    organizerTix.increaseAllowance(
-      ticketing.address,
-      EVENT_REGISTRATION_FEE.add(MINTING_FEE)
-    );
-    await organizerTicketing.registerEvent(
-      "test",
-      "test",
-      1,
-      2,
-      await organizerTicketing.EVENT_OPEN()
-    );
-    await organizerTicketing.mint(1, 1, spectator1.address);
-    let hash = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator1.address, 1, 1, ethers.constants.AddressZero]
-      )
-    );
-    let signature = await approver.signMessage(ethers.utils.arrayify(hash));
-    await spectator1Exchange.createSwap(
-      1,
-      1,
-      ethers.constants.AddressZero,
-      hash,
-      signature
-    );
-    hash = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator1.address, 1, PRICE, ethers.constants.AddressZero]
-      )
-    );
-    signature = await approver.signMessage(ethers.utils.arrayify(hash));
-    await expect(
-      spectator1Exchange.createResale(
-        1,
-        PRICE,
-        ethers.constants.AddressZero,
-        hash,
-        signature
-      )
-    ).to.be.revertedWith("The token is already on swap");
-  });
-
-  it("Should prevent a spectator to put a token on resale if they are not the owner of the token", async function () {
-    organizerTix.increaseAllowance(
-      ticketing.address,
-      EVENT_REGISTRATION_FEE.add(MINTING_FEE)
-    );
-    await organizerTicketing.registerEvent(
-      "test",
-      "test",
-      1,
-      2,
-      await organizerTicketing.EVENT_OPEN()
-    );
-    await organizerTicketing.mint(1, 1, spectator1.address);
-    const hash = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator1.address, 1, PRICE, ethers.constants.AddressZero]
-      )
-    );
-    const signature = await approver.signMessage(ethers.utils.arrayify(hash));
-    await expect(
-      spectator2Exchange.createResale(
-        1,
-        PRICE,
-        ethers.constants.AddressZero,
-        hash,
-        signature
-      )
-    ).to.be.revertedWith("The token does not exist or the sender is not the owner");
-  });
-
-  it("Should prevent a spectator to put a token on resale with a negativ price", async function () {
-    organizerTix.increaseAllowance(
-      ticketing.address,
-      EVENT_REGISTRATION_FEE.add(MINTING_FEE)
-    );
-    await organizerTicketing.registerEvent(
-      "test",
-      "test",
-      1,
-      2,
-      await organizerTicketing.EVENT_OPEN()
-    );
-    await organizerTicketing.mint(1, 1, spectator1.address);
-    const hash = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator1.address, 1, 0, ethers.constants.AddressZero]
-      )
-    );
-    const signature = await approver.signMessage(ethers.utils.arrayify(hash));
-    await expect(
-      spectator1Exchange.createResale(
-        1,
-        0,
-        ethers.constants.AddressZero,
-        hash,
-        signature
-      )
-    ).to.be.revertedWith("The price cannot be negativ");
-  });
-
-  it("Should prevent a spectator to put a token on resale with an optional buyer that is not registered", async function () {
-    organizerTix.increaseAllowance(
-      ticketing.address,
-      EVENT_REGISTRATION_FEE.add(MINTING_FEE)
-    );
-    await organizerTicketing.registerEvent(
-      "test",
-      "test",
-      1,
-      2,
-      await organizerTicketing.EVENT_OPEN()
-    );
-    await organizerTicketing.mint(1, 1, spectator1.address);
-    const hash = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator1.address, 1, PRICE, tixngo.address]
-      )
-    );
-    const signature = await approver.signMessage(ethers.utils.arrayify(hash));
-    await expect(
-      spectator1Exchange.createResale(
-        1,
-        PRICE,
-        tixngo.address,
-        hash,
-        signature
-      )
-    ).to.be.revertedWith("The optional buyer must be a registered user");
-  });
-
-  it("Should prevent a spectator to put a token on resale if the hash is incorrect", async function () {
-    organizerTix.increaseAllowance(
-      ticketing.address,
-      EVENT_REGISTRATION_FEE.add(MINTING_FEE)
-    );
-    await organizerTicketing.registerEvent(
-      "test",
-      "test",
-      1,
-      2,
-      await organizerTicketing.EVENT_OPEN()
-    );
-    await organizerTicketing.mint(1, 1, spectator1.address);
-    const hash = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator1.address, 42, PRICE, ethers.constants.AddressZero]
-      )
-    );
-    const signature = await approver.signMessage(ethers.utils.arrayify(hash));
-    await expect(
-      spectator1Exchange.createResale(
-        1,
-        PRICE,
-        ethers.constants.AddressZero,
-        hash,
-        signature
-      )
-    ).to.be.revertedWith("The hash is not valid");
-  });
-
-  it("Should prevent a spectator to put a token on resale if the proof has not been signed by the approver", async function () {
-    organizerTix.increaseAllowance(
-      ticketing.address,
-      EVENT_REGISTRATION_FEE.add(MINTING_FEE)
-    );
-    await organizerTicketing.registerEvent(
-      "test",
-      "test",
-      1,
-      2,
-      await organizerTicketing.EVENT_OPEN()
-    );
-    await organizerTicketing.mint(1, 1, spectator1.address);
-    const hash = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator1.address, 1, PRICE, ethers.constants.AddressZero]
-      )
-    );
-    const signature = await identifier.signMessage(ethers.utils.arrayify(hash));
-    await expect(
-      spectator1Exchange.createResale(
-        1,
-        PRICE,
-        ethers.constants.AddressZero,
-        hash,
-        signature
-      )
-    ).to.be.revertedWith("The signer is invalid");
-  });
-
-  it("Should allow a spectator to remove a ticket from resale", async function () {
-    organizerTix.increaseAllowance(
-      ticketing.address,
-      EVENT_REGISTRATION_FEE.add(MINTING_FEE)
-    );
-    await organizerTicketing.registerEvent(
-      "test",
-      "test",
-      1,
-      2,
-      await organizerTicketing.EVENT_OPEN()
-    );
-    await organizerTicketing.mint(1, 1, spectator1.address);
-    const hash = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator1.address, 1, PRICE, spectator2.address]
-      )
-    );
-    const signature = await approver.signMessage(ethers.utils.arrayify(hash));
-    await spectator1Exchange.createResale(
-      1,
-      PRICE,
-      spectator2.address,
-      hash,
-      signature
-    );
-    await spectator1Exchange.cancelResale(1);
-    expect((await exchange.getResale(1)).price).to.equal(0);
-  });
-
-  it("Should prevent a spectator to remove a token from resale if they are not the owner of the token", async function () {
-    organizerTix.increaseAllowance(
-      ticketing.address,
-      EVENT_REGISTRATION_FEE.add(MINTING_FEE)
-    );
-    await organizerTicketing.registerEvent(
-      "test",
-      "test",
-      1,
-      2,
-      await organizerTicketing.EVENT_OPEN()
-    );
-    await organizerTicketing.mint(1, 1, spectator1.address);
-    const hash = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator1.address, 1, PRICE, spectator2.address]
-      )
-    );
-    const signature = await approver.signMessage(ethers.utils.arrayify(hash));
-    await spectator1Exchange.createResale(
-      1,
-      PRICE,
-      spectator2.address,
-      hash,
-      signature
-    );
-    await expect(spectator2Exchange.cancelResale(1)).to.be.revertedWith("The token does not exist or the sender is not the owner");
-  });
-
-  it("Should prevent a spectator to remove a token from resale if the token is not on resale", async function () {
-    organizerTix.increaseAllowance(
-      ticketing.address,
-      EVENT_REGISTRATION_FEE.add(MINTING_FEE)
-    );
-    await organizerTicketing.registerEvent(
-      "test",
-      "test",
-      1,
-      2,
-      await organizerTicketing.EVENT_OPEN()
-    );
-    await organizerTicketing.mint(1, 1, spectator1.address);
-    await expect(spectator1Exchange.cancelResale(1)).to.be.revertedWith("The token is not on resale");
-  });
-
-  it("Should allow a spectator to query the required amount of TIX to purchase a token on resale", async function () {
-    organizerTix.increaseAllowance(
-      ticketing.address,
-      EVENT_REGISTRATION_FEE.add(MINTING_FEE)
-    );
-    await organizerTicketing.registerEvent(
-      "test",
-      "test",
-      1,
-      2,
-      await organizerTicketing.EVENT_OPEN()
-    );
-    await organizerTicketing.mint(1, 1, spectator1.address);
-    const hash = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator1.address, 1, PRICE, spectator2.address]
-      )
-    );
-    const signature = await approver.signMessage(ethers.utils.arrayify(hash));
-    await spectator1Exchange.createResale(
-      1,
-      PRICE,
-      spectator2.address,
-      hash,
-      signature
-    );
-    expect(await spectator2Exchange.calcResaleTokenAmount(1)).to.equal(precision.mul(PRICE + (PRICE / 100 * 2 / 2)));
-  });
-
-  it("Should allow a spectator to accept a resale", async function () {
-    organizerTix.increaseAllowance(
-      ticketing.address,
-      EVENT_REGISTRATION_FEE.add(MINTING_FEE)
-    );
-    const now = Date.now();
-    const nowPlusOneYear = now + 1000000;
-    const state = await organizerTicketing.EVENT_OPEN();
+    const now = Date.now() + 1000000;
+    const nowPlusOneYear = now + 100000000;
     await organizerTicketing.registerEvent(
       "test",
       "test",
       BigNumber.from(now),
       BigNumber.from(nowPlusOneYear),
-      state
+      await organizerTicketing.EVENT_OPEN()
     );
     await organizerTicketing.mint(1, 1, spectator1.address);
-    const hash = ethers.utils.keccak256(
+
+    // compute shares
+    const price = PRECISION.mul(USD_RESALE_PRICE);
+    const fee = price.mul(RESALE_FEE_PERCENTAGE).div(100).div(2);
+    const sellerShare = price.sub(fee);
+    const tixngoShare = fee;
+    const organizerShare = fee;
+
+    // resale hash + approver signature + resale offer signature
+    const resaleHash = ethers.utils.keccak256(
       ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator1.address, 1, PRICE, spectator2.address]
+        [
+          "uint256",
+          "address",
+          "address",
+          "address",
+          "address",
+          "uint256",
+          "uint256",
+          "uint256",
+        ],
+        [
+          1,
+          spectator2.address,
+          spectator1.address,
+          tixngo.address,
+          organizer.address,
+          sellerShare,
+          tixngoShare,
+          organizerShare,
+        ]
       )
     );
-    const signature = await approver.signMessage(ethers.utils.arrayify(hash));
-    await spectator1Ticketing.approve(spectator1Exchange.address, 1);
-    await spectator1Exchange.createResale(
-      1,
-      PRICE,
-      spectator2.address,
-      hash,
-      signature
+    const approverSignature = await approver.signMessage(
+      ethers.utils.arrayify(resaleHash)
     );
-    const priceInTix = precision.mul(PRICE);
-    const feeInTix = precision.mul(PRICE).mul(2).div(100).div(2);
-    await spectator2Tix.increaseAllowance(spectator2Exchange.address, priceInTix.add(feeInTix));
-    await spectator2Exchange.acceptResale(1);
+    const resaleOfferSignature = await spectator1.signMessage(
+      ethers.utils.arrayify(resaleHash)
+    );
+
+    // ticket transfer hash + signature
+    const ticketTransferHash = ethers.utils.keccak256(
+      ethers.utils.defaultAbiCoder.encode(
+        ["address", "address", "uint256"],
+        [spectator1.address, spectator2.address, 1]
+      )
+    );
+    const ticketTransferSignature = await spectator1.signMessage(
+      ethers.utils.arrayify(ticketTransferHash)
+    );
+
+    // tix transfer to seller hash + signature
+    const tixTransferToSellerHash = ethers.utils.keccak256(
+      ethers.utils.defaultAbiCoder.encode(
+        ["address", "address", "uint256"],
+        [spectator2.address, spectator1.address, sellerShare]
+      )
+    );
+    const tixTransferToSellerSignature = await spectator2.signMessage(
+      ethers.utils.arrayify(tixTransferToSellerHash)
+    );
+
+    // tix transfer to tixngo hash + signature
+    const tixTransferToTixngoHash = ethers.utils.keccak256(
+      ethers.utils.defaultAbiCoder.encode(
+        ["address", "address", "uint256"],
+        [spectator2.address, tixngo.address, tixngoShare]
+      )
+    );
+    const tixTransferToTixngoSignature = await spectator2.signMessage(
+      ethers.utils.arrayify(tixTransferToTixngoHash)
+    );
+
+    // tix transfer to organizer hash + signature
+    const tixTransferToOrganizerHash = ethers.utils.keccak256(
+      ethers.utils.defaultAbiCoder.encode(
+        ["address", "address", "uint256"],
+        [spectator2.address, organizer.address, organizerShare]
+      )
+    );
+    const tixTransferToOrganizerSignature = await spectator2.signMessage(
+      ethers.utils.arrayify(tixTransferToOrganizerHash)
+    );
+
+    // resale transaction
+    const data = {
+      tokenId: 1,
+      optionalBuyer: spectator2.address,
+      seller: spectator1.address,
+      sellerShare: sellerShare,
+      tixngoShare: tixngoShare,
+      organizerShare: organizerShare,
+      approverSignature: approverSignature,
+      resaleOfferSignature: resaleOfferSignature,
+      ticketTransferSignature: ticketTransferSignature,
+      tixTransferToSellerSignature: tixTransferToSellerSignature,
+      tixTransferToTixngoSignature: tixTransferToTixngoSignature,
+      tixTransferToOrganizerSignature: tixTransferToOrganizerSignature,
+    }
+    await spectator2Exchange.resell(data);
     expect(await ticketing.ownerOf(1)).to.equal(spectator2.address);
-    expect(await tix.balanceOf(spectator2.address)).to.equal(INITIAL_TOKEN_AMOUNT.sub(priceInTix).sub(feeInTix));
-    expect(await tix.balanceOf(spectator1.address)).to.equal(priceInTix.sub(feeInTix));
-    expect(await tix.balanceOf(tixngo.address)).to.equal(EVENT_REGISTRATION_FEE.add(MINTING_FEE).add(feeInTix));
-    expect(await tix.balanceOf(organizer.address)).to.equal(INITIAL_TOKEN_AMOUNT.sub(EVENT_REGISTRATION_FEE).sub(MINTING_FEE).add(feeInTix));
-    expect((await exchange.getResale(1)).price).to.equal(0);
+    expect(await tix.balanceOf(spectator1.address)).to.equal(sellerShare);
+    expect(await tix.balanceOf(spectator2.address)).to.equal(INITIAL_TOKEN_AMOUNT.sub(sellerShare).sub(tixngoShare).sub(organizerShare));
+    expect(await tix.balanceOf(tixngo.address)).to.equal(EVENT_REGISTRATION_FEE.add(MINTING_FEE).add(tixngoShare));
+    expect(await tix.balanceOf(organizer.address)).to.equal(INITIAL_TOKEN_AMOUNT.sub(EVENT_REGISTRATION_FEE).sub(MINTING_FEE).add(organizerShare));
   });
 
-  it("Should prevent a spectator to pruchase a ticket that is not on resale", async function () {
+  it("Should allow two spectators to make a swap", async function () {
+    // create event and ticket
     organizerTix.increaseAllowance(
       ticketing.address,
-      EVENT_REGISTRATION_FEE.add(MINTING_FEE)
+      EVENT_REGISTRATION_FEE.add(MINTING_FEE).add(MINTING_FEE)
     );
-    const now = Date.now();
-    const nowPlusOneYear = now + 1000000;
-    const state = await organizerTicketing.EVENT_OPEN();
+    const now = Date.now() + 1000000;
+    const nowPlusOneYear = now + 100000000;
     await organizerTicketing.registerEvent(
       "test",
       "test",
       BigNumber.from(now),
       BigNumber.from(nowPlusOneYear),
-      state
-    );
-    await organizerTicketing.mint(1, 1, spectator1.address);
-    await expect(spectator2Exchange.acceptResale(1)).to.be.revertedWith("The token is not on resale");
-  });
-
-  it("Should allow a spectator to accept a resale", async function () {
-    organizerTix.increaseAllowance(
-      ticketing.address,
-      EVENT_REGISTRATION_FEE.add(MINTING_FEE)
-    );
-    const now = Date.now();
-    const nowPlusOneYear = now + 1000000;
-    const state = await organizerTicketing.EVENT_OPEN();
-    await organizerTicketing.registerEvent(
-      "test",
-      "test",
-      BigNumber.from(now),
-      BigNumber.from(nowPlusOneYear),
-      state
-    );
-    await organizerTicketing.mint(1, 1, spectator1.address);
-    const hash = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator1.address, 1, PRICE, spectator2.address]
-      )
-    );
-    const signature = await approver.signMessage(ethers.utils.arrayify(hash));
-    await spectator1Exchange.createResale(
-      1,
-      PRICE,
-      spectator2.address,
-      hash,
-      signature
-    );
-    await expect(exchange.acceptResale(1)).to.be.revertedWith("The buyer must be a registered user");
-  });
-
-  it("Should allow a spectator to accept a resale", async function () {
-    organizerTix.increaseAllowance(
-      ticketing.address,
-      EVENT_REGISTRATION_FEE.add(MINTING_FEE)
-    );
-    const now = Date.now();
-    const nowPlusOneYear = now + 1000000;
-    const state = await organizerTicketing.EVENT_OPEN();
-    await organizerTicketing.registerEvent(
-      "test",
-      "test",
-      BigNumber.from(now),
-      BigNumber.from(nowPlusOneYear),
-      state
-    );
-    await organizerTicketing.mint(1, 1, spectator1.address);
-    const hash = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator1.address, 1, PRICE, spectator1.address]
-      )
-    );
-    const signature = await approver.signMessage(ethers.utils.arrayify(hash));
-    await spectator1Ticketing.approve(spectator1Exchange.address, 1);
-    await spectator1Exchange.createResale(
-      1,
-      PRICE,
-      spectator1.address,
-      hash,
-      signature
-    );
-    await expect(spectator2Exchange.acceptResale(1)).to.be.revertedWith("The buyer is not the one chosen by the seller");
-  });
-
-  it("Should allow a spectator to accept a resale", async function () {
-    organizerTix.increaseAllowance(
-      ticketing.address,
-      EVENT_REGISTRATION_FEE.add(MINTING_FEE)
-    );
-  const now = Date.now();
-  const nowPlusOneYear = now + 1000000;
-  const state = await organizerTicketing.EVENT_OPEN();
-  await organizerTicketing.registerEvent(
-    "test",
-    "test",
-    BigNumber.from(now),
-    BigNumber.from(nowPlusOneYear),
-    state
-  );
-    await organizerTicketing.mint(1, 1, spectator1.address);
-    const hash = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator1.address, 1, PRICE, spectator2.address]
-      )
-    );
-    const signature = await approver.signMessage(ethers.utils.arrayify(hash));
-    await spectator1Ticketing.approve(spectator1Exchange.address, 1);
-    await spectator1Exchange.createResale(
-      1,
-      PRICE,
-      spectator2.address,
-      hash,
-      signature
-    );
-    await expect(spectator2Exchange.acceptResale(1)).to.be.revertedWith("Not enough TIX to process the operation");
-  });
-
-  it("Should allow a spectator to put a ticket on swap", async function () {
-    organizerTix.increaseAllowance(
-      ticketing.address,
-      EVENT_REGISTRATION_FEE.add(MINTING_FEE)
-    );
-    await organizerTicketing.registerEvent(
-      "test",
-      "test",
-      1,
-      2,
       await organizerTicketing.EVENT_OPEN()
     );
     await organizerTicketing.mint(1, 1, spectator1.address);
-    const hash = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator1.address, 1, 1, spectator2.address]
-      )
-    );
-    const signature = await approver.signMessage(ethers.utils.arrayify(hash));
-    await spectator1Exchange.createSwap(
-      1,
-      1,
-      spectator2.address,
-      hash,
-      signature
-    );
-    const resale = await exchange.getSwap(1);
-    expect(resale.eventIdOfWantedToken).to.equal(1);
-    expect(resale.optionalParticipant).to.equal(spectator2.address);
-  });
-
-  it("Should prevent a spectator to put a token on swap if the token is already on resale", async function () {
-    organizerTix.increaseAllowance(
-      ticketing.address,
-      EVENT_REGISTRATION_FEE.add(MINTING_FEE)
-    );
-    await organizerTicketing.registerEvent(
-      "test",
-      "test",
-      1,
-      2,
-      await organizerTicketing.EVENT_OPEN()
-    );
-    await organizerTicketing.mint(1, 1, spectator1.address);
-    const hash = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator1.address, 1, PRICE, ethers.constants.AddressZero]
-      )
-    );
-    const signature = await approver.signMessage(ethers.utils.arrayify(hash));
-    await spectator1Exchange.createResale(
-      1,
-      PRICE,
-      ethers.constants.AddressZero,
-      hash,
-      signature
-    );
-    await expect(
-      spectator1Exchange.createSwap(
-        1,
-        1,
-        ethers.constants.AddressZero,
-        hash,
-        signature
-      )
-    ).to.be.revertedWith("The token is already on resale");
-  });
-
-  it("Should prevent a spectator to put a token on swap if the token is already on swap", async function () {
-    organizerTix.increaseAllowance(
-      ticketing.address,
-      EVENT_REGISTRATION_FEE.add(MINTING_FEE)
-    );
-    await organizerTicketing.registerEvent(
-      "test",
-      "test",
-      1,
-      2,
-      await organizerTicketing.EVENT_OPEN()
-    );
-    await organizerTicketing.mint(1, 1, spectator1.address);
-    let hash = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator1.address, 1, 1, ethers.constants.AddressZero]
-      )
-    );
-    let signature = await approver.signMessage(ethers.utils.arrayify(hash));
-    await spectator1Exchange.createSwap(
-      1,
-      1,
-      ethers.constants.AddressZero,
-      hash,
-      signature
-    );
-    hash = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator1.address, 1, PRICE, ethers.constants.AddressZero]
-      )
-    );
-    signature = await approver.signMessage(ethers.utils.arrayify(hash));
-    await expect(
-      spectator1Exchange.createSwap(
-        1,
-        1,
-        ethers.constants.AddressZero,
-        hash,
-        signature
-      )
-    ).to.be.revertedWith("The token is already on swap");
-  });
-
-  it("Should prevent a spectator to put a token on swap if the wanted token does not exist", async function () {
-    organizerTix.increaseAllowance(
-      ticketing.address,
-      EVENT_REGISTRATION_FEE.add(MINTING_FEE)
-    );
-    await organizerTicketing.registerEvent(
-      "test",
-      "test",
-      1,
-      2,
-      await organizerTicketing.EVENT_OPEN()
-    );
-    await organizerTicketing.mint(1, 1, spectator1.address);
-    let hash = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator1.address, 1, 1, ethers.constants.AddressZero]
-      )
-    );
-    let signature = await approver.signMessage(ethers.utils.arrayify(hash));
-    await expect(
-      spectator1Exchange.createSwap(
-        1,
-        2,
-        ethers.constants.AddressZero,
-        hash,
-        signature
-      )
-    ).to.be.revertedWith("The event id of the wanted token does not exist");
-  });
-
-  it("Should prevent a spectator to put a token on swap if they are not the owner of the token", async function () {
-    organizerTix.increaseAllowance(
-      ticketing.address,
-      EVENT_REGISTRATION_FEE.add(MINTING_FEE)
-    );
-    await organizerTicketing.registerEvent(
-      "test",
-      "test",
-      1,
-      2,
-      await organizerTicketing.EVENT_OPEN()
-    );
-    await organizerTicketing.mint(1, 1, spectator1.address);
-    let hash = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator1.address, 1, 1, ethers.constants.AddressZero]
-      )
-    );
-    let signature = await approver.signMessage(ethers.utils.arrayify(hash));
-    await expect(
-      spectator2Exchange.createSwap(
-        1,
-        1,
-        ethers.constants.AddressZero,
-        hash,
-        signature
-      )
-    ).to.be.revertedWith("The token does not exist or the sender is not the owner");
-  });
-
-  it("Should prevent a spectator to put a token on swap with an optional participant that is not registered", async function () {
-    organizerTix.increaseAllowance(
-      ticketing.address,
-      EVENT_REGISTRATION_FEE.add(MINTING_FEE)
-    );
-    await organizerTicketing.registerEvent(
-      "test",
-      "test",
-      1,
-      2,
-      await organizerTicketing.EVENT_OPEN()
-    );
-    await organizerTicketing.mint(1, 1, spectator1.address);
-    let hash = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator1.address, 1, 1, tixngo.address]
-      )
-    );
-    let signature = await approver.signMessage(ethers.utils.arrayify(hash));
-    await expect(
-      spectator1Exchange.createSwap(
-        1,
-        1,
-        tixngo.address,
-        hash,
-        signature
-      )
-    ).to.be.revertedWith("The optional participant must be a registered user");
-  });
-
-  it("Should prevent a spectator to put a token on swap if the hash is incorrect", async function () {
-    organizerTix.increaseAllowance(
-      ticketing.address,
-      EVENT_REGISTRATION_FEE.add(MINTING_FEE)
-    );
-    await organizerTicketing.registerEvent(
-      "test",
-      "test",
-      1,
-      2,
-      await organizerTicketing.EVENT_OPEN()
-    );
-    await organizerTicketing.mint(1, 1, spectator1.address);
-    let hash = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator2.address, 1, 1, ethers.constants.AddressZero]
-      )
-    );
-    let signature = await approver.signMessage(ethers.utils.arrayify(hash));
-    await expect(
-      spectator1Exchange.createSwap(
-        1,
-        1,
-        ethers.constants.AddressZero,
-        hash,
-        signature
-      )
-    ).to.be.revertedWith("The hash is not valid");
-  });
-
-  it("Should prevent a spectator to put a token on resale if the proof has not been signed by the approver", async function () {
-  organizerTix.increaseAllowance(
-    ticketing.address,
-    EVENT_REGISTRATION_FEE.add(MINTING_FEE)
-  );
-  await organizerTicketing.registerEvent(
-    "test",
-    "test",
-    1,
-    2,
-    await organizerTicketing.EVENT_OPEN()
-  );
-  await organizerTicketing.mint(1, 1, spectator1.address);
-  let hash = ethers.utils.keccak256(
-    ethers.utils.defaultAbiCoder.encode(
-      ["address", "uint256", "uint256", "address"],
-      [spectator1.address, 1, 1, ethers.constants.AddressZero]
-    )
-  );
-  let signature = await identifier.signMessage(ethers.utils.arrayify(hash));
-  await expect(
-    spectator1Exchange.createSwap(
-      1,
-      1,
-      ethers.constants.AddressZero,
-      hash,
-      signature
-    )
-  ).to.be.revertedWith("The signer is invalid");
-  });
-
-  it("Should allow a spectator to cancel a swap", async function () {
-    organizerTix.increaseAllowance(
-      ticketing.address,
-      EVENT_REGISTRATION_FEE.add(MINTING_FEE)
-    );
-    await organizerTicketing.registerEvent(
-      "test",
-      "test",
-      1,
-      2,
-      await organizerTicketing.EVENT_OPEN()
-    );
-    await organizerTicketing.mint(1, 1, spectator1.address);
-    let hash = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator1.address, 1, 1, ethers.constants.AddressZero]
-      )
-    );
-    let signature = await approver.signMessage(ethers.utils.arrayify(hash));
-    await spectator1Exchange.createSwap(
-      1,
-      1,
-      ethers.constants.AddressZero,
-      hash,
-      signature
-    );
-    await spectator1Exchange.cancelSwap(1);
-    expect((await exchange.getSwap(1)).eventIdOfWantedToken).to.be.equal(0);
-  });
-
-  it("Should prevent a spectator to cancel a swap that does not exist", async function () {
-    await expect(spectator1Exchange.cancelSwap(1)).to.be.revertedWith("The token is not on swap");
-  })
-
-  it("Should prevent a spectator to cancel a swap if they are not the owner the token", async function () {
-  organizerTix.increaseAllowance(
-    ticketing.address,
-    EVENT_REGISTRATION_FEE.add(MINTING_FEE)
-  );
-  await organizerTicketing.registerEvent(
-    "test",
-    "test",
-    1,
-    2,
-    await organizerTicketing.EVENT_OPEN()
-  );
-  await organizerTicketing.mint(1, 1, spectator1.address);
-  let hash = ethers.utils.keccak256(
-    ethers.utils.defaultAbiCoder.encode(
-      ["address", "uint256", "uint256", "address"],
-      [spectator1.address, 1, 1, ethers.constants.AddressZero]
-    )
-  );
-  let signature = await approver.signMessage(ethers.utils.arrayify(hash));
-  await spectator1Exchange.createSwap(
-    1,
-    1,
-    ethers.constants.AddressZero,
-    hash,
-    signature
-  );
-    await expect(spectator2Exchange.cancelSwap(1)).to.be.revertedWith("The token does not exist or the sender is not the owner");
-  });
-
-  it("Should allow a spectator to accept a swap", async function () {
-    organizerTix.increaseAllowance(
-      ticketing.address,
-      EVENT_REGISTRATION_FEE.add(MINTING_FEE.mul(2))
-    );
-    const now = Date.now();
-    const nowPlusOneYear = now + 1000000;
-    const state = await organizerTicketing.EVENT_OPEN();
-    await organizerTicketing.registerEvent(
-      "test",
-      "test",
-      BigNumber.from(now),
-      BigNumber.from(nowPlusOneYear),
-      state
-    );
-    await organizerTicketing.mint(1, 1, spectator1.address);
-    let hash = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator1.address, 1, 1, ethers.constants.AddressZero]
-      )
-    );
-    let signature = await approver.signMessage(ethers.utils.arrayify(hash));
-    await spectator1Ticketing.approve(spectator1Exchange.address, 1);
-    await spectator1Exchange.createSwap(
-      1,
-      1,
-      ethers.constants.AddressZero,
-      hash,
-      signature
-    );
     await organizerTicketing.mint(1, 2, spectator2.address);
-    await spectator2Ticketing.approve(spectator2Exchange.address, 2);
-    await spectator2Exchange.acceptSwap(1, 2);
+
+    // swap hash + approver signature + swap offer signature
+    const swapHash = ethers.utils.keccak256(
+      ethers.utils.defaultAbiCoder.encode(
+        [
+          "uint256",
+          "uint256",
+          "address",
+          "address"
+        ],
+        [
+          1,
+          2,
+          spectator1.address,
+          spectator2.address
+        ]
+      )
+    );
+    const approverSignature = await approver.signMessage(
+      ethers.utils.arrayify(swapHash)
+    );
+    const swapOfferSignature = await spectator1.signMessage(
+      ethers.utils.arrayify(swapHash)
+    );
+
+    // ticket transfer hashes + signatures
+    const ticketTransferHash_A = ethers.utils.keccak256(
+      ethers.utils.defaultAbiCoder.encode(
+        ["address", "address", "uint256"],
+        [spectator1.address, spectator2.address, 1]
+      )
+    );
+    const ticketTransferSignature_A = await spectator1.signMessage(
+      ethers.utils.arrayify(ticketTransferHash_A)
+    );
+    const ticketTransferHash_B = ethers.utils.keccak256(
+      ethers.utils.defaultAbiCoder.encode(
+        ["address", "address", "uint256"],
+        [spectator2.address, spectator1.address, 2]
+      )
+    );
+    const ticketTransferSignature_B = await spectator2.signMessage(
+      ethers.utils.arrayify(ticketTransferHash_B)
+    );
+
+    // swap transaction
+    const data = {
+      tokenId_A: 1,
+      tokenId_B: 2,
+      user_A: spectator1.address,
+      user_B: spectator2.address,
+      approverSignature: approverSignature,
+      swapOfferSignature: swapOfferSignature,
+      ticketTransferSignature_A: ticketTransferSignature_A,
+      ticketTransferSignature_B: ticketTransferSignature_B
+    }
+    await spectator2Exchange.swap(data);
     expect(await ticketing.ownerOf(1)).to.equal(spectator2.address);
     expect(await ticketing.ownerOf(2)).to.equal(spectator1.address);
-    expect((await exchange.getSwap(1)).eventIdOfWantedToken).to.equal(0);
-  });
-
-  it("Should prevent a spectator to accept a swap is the token is not on swap", async function () {
-    await expect(spectator1Exchange.acceptSwap(1, 2)).to.be.revertedWith(
-      "The token is not on swap"
-    );
-  });
-
-  it("Should prevent a spectator to accept a swap with a token they do not own", async function () {
-    organizerTix.increaseAllowance(
-      ticketing.address,
-      EVENT_REGISTRATION_FEE.add(MINTING_FEE.mul(2))
-    );
-    const now = Date.now();
-    const nowPlusOneYear = now + 1000000;
-    const state = await organizerTicketing.EVENT_OPEN();
-    await organizerTicketing.registerEvent(
-      "test",
-      "test",
-      BigNumber.from(now),
-      BigNumber.from(nowPlusOneYear),
-      state
-    );
-    await organizerTicketing.mint(1, 1, spectator1.address);
-    let hash = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator1.address, 1, 1, ethers.constants.AddressZero]
-      )
-    );
-    let signature = await approver.signMessage(ethers.utils.arrayify(hash));
-    await spectator1Ticketing.approve(spectator1Exchange.address, 1);
-    await spectator1Exchange.createSwap(
-      1,
-      1,
-      ethers.constants.AddressZero,
-      hash,
-      signature
-    );
-    await expect(spectator2Exchange.acceptSwap(1, 1)).to.be.revertedWith(
-      "The token id of the acceptor does not exist or the it is not the owner of the token"
-    );
-  });
-
-    it("Should prevent a spectator to accept a token if the token is not part of the wanted event id", async function () {
-      organizerTix.increaseAllowance(
-        ticketing.address,
-        EVENT_REGISTRATION_FEE.mul(2).add(MINTING_FEE.mul(2))
-      );
-      const now = Date.now();
-      const nowPlusOneYear = now + 1000000;
-      const state = await organizerTicketing.EVENT_OPEN();
-      await organizerTicketing.registerEvent(
-        "test",
-        "test",
-        BigNumber.from(now),
-        BigNumber.from(nowPlusOneYear),
-        state
-      );
-      await organizerTicketing.registerEvent(
-        "test",
-        "test",
-        BigNumber.from(now),
-        BigNumber.from(nowPlusOneYear),
-        state
-      );
-      await organizerTicketing.mint(1, 1, spectator1.address);
-      await organizerTicketing.mint(2, 1, spectator2.address);
-      let hash = ethers.utils.keccak256(
-        ethers.utils.defaultAbiCoder.encode(
-          ["address", "uint256", "uint256", "address"],
-          [spectator1.address, 1, 1, ethers.constants.AddressZero]
-        )
-      );
-      let signature = await approver.signMessage(ethers.utils.arrayify(hash));
-      await spectator1Ticketing.approve(spectator1Exchange.address, 1);
-      await spectator1Exchange.createSwap(
-        1,
-        1,
-        ethers.constants.AddressZero,
-        hash,
-        signature
-      );
-      await expect(spectator2Exchange.acceptSwap(1, 2)).to.be.revertedWith(
-        "The token of the acceptor is not part the correct event"
-      );
-    });
-
-    it("Should prevent a spectator to accept a swap if they are not the optional participant", async function () {
-      organizerTix.increaseAllowance(
-        ticketing.address,
-        EVENT_REGISTRATION_FEE.add(MINTING_FEE.mul(2))
-      );
-      const now = Date.now();
-      const nowPlusOneYear = now + 1000000;
-      const state = await organizerTicketing.EVENT_OPEN();
-      await organizerTicketing.registerEvent(
-        "test",
-        "test",
-        BigNumber.from(now),
-        BigNumber.from(nowPlusOneYear),
-        state
-      );
-      await organizerTicketing.mint(1, 1, spectator1.address);
-      await organizerTicketing.mint(1, 2, spectator2.address);
-      let hash = ethers.utils.keccak256(
-        ethers.utils.defaultAbiCoder.encode(
-          ["address", "uint256", "uint256", "address"],
-          [spectator1.address, 1, 1, spectator1.address]
-        )
-      );
-      let signature = await approver.signMessage(ethers.utils.arrayify(hash));
-      await spectator1Ticketing.approve(spectator1Exchange.address, 1);
-      await spectator1Exchange.createSwap(
-        1,
-        1,
-        spectator1.address,
-        hash,
-        signature
-      );
-      await expect(spectator2Exchange.acceptSwap(1, 2)).to.be.revertedWith(
-        "The acceptor is not the one chosen by the creator of the swap"
-      );
-    });
-
-  it("Should allow anybody to get a resale", async function () {
-    organizerTix.increaseAllowance(
-      ticketing.address,
-      EVENT_REGISTRATION_FEE.add(MINTING_FEE)
-    );
-    const now = Date.now();
-    const nowPlusOneYear = now + 1000000;
-    const state = await organizerTicketing.EVENT_OPEN();
-    await organizerTicketing.registerEvent(
-      "test",
-      "test",
-      BigNumber.from(now),
-      BigNumber.from(nowPlusOneYear),
-      state
-    );
-    await organizerTicketing.mint(1, 1, spectator1.address);
-    let hash = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator1.address, 1, PRICE, spectator2.address]
-      )
-    );
-    let signature = await approver.signMessage(ethers.utils.arrayify(hash));
-    await spectator1Ticketing.approve(spectator1Exchange.address, 1);
-    await spectator1Exchange.createResale(
-      1,
-      PRICE,
-      spectator2.address,
-      hash,
-      signature
-    );
-    const resale = await exchange.getResale(1);
-    expect(resale.price).to.equal(PRICE);
-    expect(resale.optionalBuyer).to.equal(spectator2.address);
-  });
-
-  it("Should allow anybody to get a swap", async function () {
-    organizerTix.increaseAllowance(
-      ticketing.address,
-      EVENT_REGISTRATION_FEE.add(MINTING_FEE)
-    );
-    const now = Date.now();
-    const nowPlusOneYear = now + 1000000;
-    const state = await organizerTicketing.EVENT_OPEN();
-    await organizerTicketing.registerEvent(
-      "test",
-      "test",
-      BigNumber.from(now),
-      BigNumber.from(nowPlusOneYear),
-      state
-    );
-    await organizerTicketing.mint(1, 1, spectator1.address);
-    let hash = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "address"],
-        [spectator1.address, 1, 1, spectator2.address]
-      )
-    );
-    let signature = await approver.signMessage(ethers.utils.arrayify(hash));
-    await spectator1Ticketing.approve(spectator1Exchange.address, 1);
-    await spectator1Exchange.createSwap(
-      1,
-      1,
-      spectator2.address,
-      hash,
-      signature
-    );
-    const swap = await exchange.getSwap(1);
-    expect(swap.eventIdOfWantedToken).to.equal(1);
-    expect(swap.optionalParticipant).to.equal(spectator2.address);
   });
 });

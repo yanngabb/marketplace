@@ -67,11 +67,6 @@ contract ExchangeV2 is Context, Ownable, IExchangeV2 {
                 data.organizerShare > uint256(0x0),
             "The share cannot be negativ"
         );
-        require(
-            _tixContract.allowance(_msgSender(), address(this)) >=
-                data.sellerShare + data.tixngoShare + data.organizerShare,
-            "Not enough TIX to process the operation"
-        );
 
         // compute hash
         address organizerAddress = _ticketingContract
@@ -173,6 +168,17 @@ contract ExchangeV2 is Context, Ownable, IExchangeV2 {
             "Error while recovering signer address"
         );
         require(recovered == _approverAddress, "The signer is invalid");
+
+        // check swap offer signature
+        (recovered, error) = ECDSA.tryRecover(
+            ECDSA.toEthSignedMessageHash(hash),
+            data.swapOfferSignature
+        );
+        require(
+            error == ECDSA.RecoverError.NoError,
+            "Error while recovering signer address"
+        );
+        require(recovered == data.user_A, "The signer is invalid");
 
         // transfer tokens
         _ticketingContract.externallyApprovedTransfer(
