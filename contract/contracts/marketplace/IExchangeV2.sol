@@ -32,7 +32,8 @@ interface IExchangeV2 {
         address user_A;
         address user_B;
         bytes approverSignature;
-        bytes swapOfferSignature;
+        bytes swapAcceptSignature_A;
+        bytes swapAcceptSignature_B;
         bytes ticketTransferSignature_A;
         bytes ticketTransferSignature_B;
     }

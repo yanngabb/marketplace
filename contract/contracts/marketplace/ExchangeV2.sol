@@ -169,16 +169,27 @@ contract ExchangeV2 is Context, Ownable, IExchangeV2 {
         );
         require(recovered == _approverAddress, "The signer is invalid");
 
-        // check swap offer signature
+        // check swap accept signature A
         (recovered, error) = ECDSA.tryRecover(
             ECDSA.toEthSignedMessageHash(hash),
-            data.swapOfferSignature
+            data.swapAcceptSignature_A
         );
         require(
             error == ECDSA.RecoverError.NoError,
             "Error while recovering signer address"
         );
         require(recovered == data.user_A, "The signer is invalid");
+
+        // check swap accept signature B
+        (recovered, error) = ECDSA.tryRecover(
+            ECDSA.toEthSignedMessageHash(hash),
+            data.swapAcceptSignature_B
+        );
+        require(
+            error == ECDSA.RecoverError.NoError,
+            "Error while recovering signer address"
+        );
+        require(recovered == data.user_B, "The signer is invalid");
 
         // transfer tokens
         _ticketingContract.externallyApprovedTransfer(

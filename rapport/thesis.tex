@@ -269,6 +269,8 @@ TODO: ADD FLOW DIAGRAM
 \section{Database}
 The database has three uses. It stores the data of the organizers and the spectators, i.e. the name, the first name, the address of residence, the email address and the Ethereum address. It stores the transfer and resale rules as well as the data necessary for their application. Finally, it stores the indexes created by the graph protocol.
 
+TODO: graph node, marketplace, identifier, approver
+
 \section{Ethereum blockchain}
 The Ethereum blockchain is the cornerstone of the system. It is it who is responsible for operating the smart contacts that implement the business logic.
 
@@ -348,11 +350,13 @@ The Exchange smart contract allows the spectator to resell or swap their ticket 
 
 Let's start with ticket resale. The resale takes place in two stages. In the first stage the seller creates a resale offer and in the second stage a buyer accepts the offer.
 
+TODO: explain that the seller MUST approve the Exchange contract to handle the ticket on his behalf
+
 To create the resale offer, the seller must specify which token they want to resell and at what price in USD. If he wishes, he can specify an optional buyer. By specifying an optional buyer, only this person can accept the resale offer. If someone else tries to accept the offer, the transaction is reverted. The seller must also attach the approval message signed by the Approver Oracle. The transaction succeeds if the following conditions are met. There is no existing offer to resell this token. There is no existing swap offer for this token. The initiator of the transaction is the owner of the token. The price is not negative. The optional buyer, if defined, is a registered spectator. The approval message is valid and has been signed by the Approver Oracle. Note that it is possible to cancel a resale offer as long as it has not yet been accepted.
 
 To accept the resale offer, the buyer must specify which token they wish to purchase and approve the smart contract to transfer an amount in TIX equivalent to the resale price. Note that the sale price is specified in USD but the transaction is made in TIX. To find out how many TIXs need to be approved, the buyer can request the current resale price from the smart contract by providing the token ID of the ticket they wish to purchase. The transaction succeeds if the following conditions are met. A resale offer for the token exists. The buyer is a registered spectator. The buyer is the optional buyer, if specified. The approved amount is sufficient to satisfy the resale.
 
-Note that a fee is taken on each resale. This fee is a percentage of the resale amount. The purpose of this fee is to cover the operating costs of NFTiX and to give a commission to the organizer of the event. You can find the flow diagram of the resale in the figure \hyperref[fig:resaleV1]{ \textit{ResaleV1}}.
+Note that a fee is taken on each resale. This fee is a percentage of the resale amount. The purpose of this fee is to cover the operating costs of NFTiX and to give a commission to the organizer of the event. The resale amount is split into three shares: the seller share, the NFTiX share and the organizer share which are respectively 98\%, 1\% and 1\% of the resale amount. The seller and the buyer pay each 50\% of this fee. You can find the flow diagram of the resaleV1 in the figure \hyperref[fig:resaleV1]{ \textit{ResaleV1}}.
 
 \begin{figure}[h!]
   \includegraphics[width=\textwidth]{resaleV1.png}
@@ -364,13 +368,15 @@ The swap works analogously to the resale. The major difference is that during a 
 
 To create a swap offer, the one making the offer must specify which token he wishes to swap and for which event he wishes to receive a token in exchange. As for the resale, he can specify an optional buyer and he must attach the approval message signed by the Approver oracle. The transaction succeeds if the following conditions are met. There is no existing offer to resell this token. There is no existing swap offer for this token. The event whose ticket is wanted by the creator of the offer exists. The initiator of the transaction is the owner of the token. The optional buyer, if defined, is a registered viewer. The approval message is valid and has been signed by the Oracle Approver. It is also possible to cancel a swap offer as long as it has not yet been accepted.
 
-To accept the swap offer, the buyer must specify which offer he wishes to accept and which token he wishes to give in exchange. The transaction succeeds if the following conditions are met. The token is currently on resale. The buyer is a registered spectator. The token provided by the offer acceptor must be part of the desired event. The buyer is the optional buyer, if specified. You can find the flow diagram of the transfer in the figure \hyperref[fig:swapV1]{ \textit{SwapV1}}.
+To accept the swap offer, the buyer must specify which offer he wishes to accept and which token he wishes to give in exchange. The transaction succeeds if the following conditions are met. The token is currently on resale. The buyer is a registered spectator. The token provided by the offer acceptor must be part of the desired event. The buyer is the optional buyer, if specified. You can find the flow diagram of the swapV1 in the figure \hyperref[fig:swapV1]{ \textit{SwapV1}}.
 
 \begin{figure}[h!]
   \includegraphics[width=\textwidth]{swapV1.png}
   \caption{SwapV1}
   \label{fig:swapV1}
 \end{figure}
+
+TODO: add small description of the flow diagrams. For instance, explain what is tokenId\_A and the optional participant.
 
 \subsection{Upgraded design}
 
@@ -379,8 +385,25 @@ To accept the swap offer, the buyer must specify which offer he wishes to accept
 \subsubsection{TIX smart contract}
 
 \subsubsection{Ticketing smart contract}
+TODO: add proof to authorize TIX transfer in order to pay the event registration fee and the minting fee
 
 \subsubsection{Exchange smart contract}
+
+You can find the flow diagram of the resaleV2 in the figure \hyperref[fig:resaleV2]{ \textit{ResaleV2}}.
+
+\begin{figure}[h!]
+  \includegraphics[width=\textwidth]{resaleV2.png}
+  \caption{ResaleV2}
+  \label{fig:resaleV2}
+\end{figure}
+
+You can find the flow diagram of the swapV2 in the figure \hyperref[fig:swapV2]{ \textit{SwapV2}}.
+
+\begin{figure}[h!]
+  \includegraphics[width=\textwidth]{swapV2.png}
+  \caption{SwapV2}
+  \label{fig:swapV2}
+\end{figure}
 
 %%%%%%%%%%%%%%%%
 \chapter{Security}
@@ -403,6 +426,8 @@ As we mentioned earlier, as much of the business logic as possible is on the blo
 
 \subsection{Non-custodial design}
 We have chosen a non-custodial design, i.e. the keys of the Ethereum wallets are held by the users and not by the system, so that the users are really the owner of their asset and that only they can manipulate them. This approach makes it possible not to have all the keys stored in the same place, which increases the attack surface because there are more potential targets but which also drastically reduces the risk of a successful attack because to have a strong influence on the system, one must be able to compromise a large number of keys.
+
+TODO: proof that the security is guarantee with the designV2. For instance, show that with the proof of approval and the proof of ticket transfert a malicous user cannot steal the ticket. The only way to get the ticket is to create the proofs of TIX transfert that will be checked by the Exchange contract
 
 \section{Threat model}
 The design we propose is based on several assumptions. The first assumption is that the organizers and operators of the system are not malicious. Indeed, organizers have the ability to delete tickets arbitrarily and system operators can revoke a user at will. Nothing prevents them from doing this kind of actions. However, we assume that this assumption is reasonable as it is unlikely that they will commit such actions. Indeed, they have more to lose than to gain. Their reputation and trust in the system would be damaged and this would have a direct impact on their income.
@@ -534,12 +559,16 @@ To go even further in the process, we could also aggregate the proofs into one i
 
 
 TODO: COMPARAISON DES DEUX APPROCHES: la première (si on enleve l'oracle) permet de créer une place de marché non régulé mais entièrement decentralisé, la deuxième permet de créer une place de marché réguler et plus pratique mais pas totalement decentralisé (cela peut être le cas avec des oracles decentralisés)
+La business logique on-chain est aussi beaucoup plus simple
+Le swap est modifié car il ne faisait pas sens. Le swap doit être peer to peer uniquement.
 
 TODO: clarify that the optional buyer is used for P2P resale and a resale with an empty optional buyer is meant to be listed on the marketplace
 
 TODO: explain how to enable off-chain payment with strip and signature
 
+TODO: explain it prevents someone to create a resale and then remove the approval on the token so that the transaction fails.
 
+TODO: conclure en disant que l'approche V1 et l'approche V2 sont deux exemples et qu'il y a plein d'autre approche possible en terme de flow, custodialité et decentralisation. 
 
 \section{Time-based proof expiration}
 TODO
@@ -572,6 +601,8 @@ The TIX could be used as a governance token so that users can vote for new featu
 It would also be possible to create a reward pool that can be shared regularly between the most acidus users of the application or to people who discover security flaws in the system. The pool could be filled by taking a small commission on each resale of tickets.
 
 TODO: instead of a token we can also emit a tokenized security with the help of Taurus
+
+TODO: exchange with liquidity to buy back tickets in exchange of TIX. This could be a good incentive to fight black market and side channel payment.
 
 %%%%%%%%%%%%%%%%%%%%
 \chapter{Conclusion}

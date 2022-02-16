@@ -314,7 +314,11 @@ describe("ExchangeV2", function () {
     const approverSignature = await approver.signMessage(
       ethers.utils.arrayify(swapHash)
     );
-    const swapOfferSignature = await spectator1.signMessage(
+    const swapAcceptSignature_A = await spectator1.signMessage(
+      ethers.utils.arrayify(swapHash)
+    );
+
+    const swapAcceptSignature_B = await spectator2.signMessage(
       ethers.utils.arrayify(swapHash)
     );
 
@@ -345,7 +349,8 @@ describe("ExchangeV2", function () {
       user_A: spectator1.address,
       user_B: spectator2.address,
       approverSignature: approverSignature,
-      swapOfferSignature: swapOfferSignature,
+      swapAcceptSignature_A: swapAcceptSignature_A,
+      swapAcceptSignature_B: swapAcceptSignature_B,
       ticketTransferSignature_A: ticketTransferSignature_A,
       ticketTransferSignature_B: ticketTransferSignature_B
     }
