@@ -9,7 +9,7 @@
 \usepackage[MScThesis,lablogo]{EPFLreport}
 \usepackage{xspace}
 
-\title{Secure, regulated and decentralized marketplace for the ticketing industry}
+\title{NFTiX: A Non-custodial and Regulated Decentralized Marketplace for the Ticketing Industry}
 \author{Yann Gabbud}
 \authorAddress{yann.gabbud@epfl.ch}
 \affiliation{Distributed Computing Laboratory \\
@@ -107,6 +107,9 @@ The system we design is based on the Ethereum blockchain. However, note that our
 \section{Ethereum wallet}
 An Ethereum wallet is an application that let a user interact with the blockchain. With his wallet, the user can manage his account and assets. For instance he can get his ETH balance. He can make a transaction to transfer ETH to someone else. He can also connect and access to decentralized applications. A wallet stores a public and a private key. The public key is used to identify the account and by extension its owner. The private key is used to sign transactions and ensure that only the owner of the wallet can interact with his account. More information here \footnote{https://ethereum.org/en/wallets/}.
 
+\section{Custodial vs non-custodial}
+As explained in the previous section, the wallet contains a private key to sign transactions. The difference between a custodial approach and a non-custodial approach is minimal but of great importance. In a custodial approach, the platform holds your private key, while in a non-custodial approach, you hold your private key. What must be understood is that when you own your private key, you own your funds!
+
 \section{Transaction}
 A transaction is an operation initiated by an external account \footnote{https://ethereum.org/en/developers/docs/accounts/} that changes the state of the blockchain. An example of transaction is a transfer of ETH from one person to another. Since the transaction changes the state of the blockchain, the account that initiates the transaction must pay a transaction fee to the blockchain. In the example above, we see that the state of the blockchain is changed because the sender's account is decreased and the receiver's account is increased by the transferred amount. More information about transactions here \footnote{https://ethereum.org/en/developers/docs/transactions/}.
 
@@ -140,34 +143,27 @@ The Graph \footnote{https://thegraph.com/docs/en/about/introduction/} is a proto
 %%%%%%%%%%%%%%%%%%%%%%
 \chapter{Related Work}
 %%%%%%%%%%%%%%%%%%%%%%
-
-\textit{The related work section covers closely related work. Here you can highlight
-the related work, how it solved the problem, and why it solved a different
-problem. Do not play down the importance of related work, all of these
-systems have been published and evaluated! Say what is different and how
-you overcome some of the weaknesses of related work by discussing the 
-trade-offs. Stay positive!
-This section is usually 3-5 pages.} \\
-
 Many projects seek to create blockchain-based digital tickets and marketplace such as B.A.M, Blocktix. EventCHI, FanDragon, PassageX, TicketHash, TIXnGO or GET protocol. For most of them, it's not easy to find out how they work because they don't have documentation open to the public and the product description is aimed primarily at the marketing guys. What we can say is that they all offer a simple form of regulation such as limiting the maximum resale price in order to fight against the black market. They all have a custodial model, i.e. they handle tickets for users. They do not appear to be decentralized and primarily use blockchain as ticket storage.
 
-We detail two systems similar to ours which seem to be the most promising and whose documentation is available: TIXnGO and GET Protocol. We begin by giving a description of these system. Then we explain what is different about our approach and how we overcome some of their weaknesses.
+We detail two systems similar to ours which seem to be the most promising and whose documentation is available: TIXnGO and GET Protocol. We begin by giving an overview of these systems. Then we explain what are the key differences about our approach and how we overcome some of their weaknesses.
 
-Let's start by explaining what these two systems do. They are both ticket distribution systems. TIXnGO is developed by Secutix SA and GET Protocol is developed by GUTS ticketing. Their approach is to use the blockchain to securely and transparently store tickets and their owners. Here's how it works. Take for example Fifa which organized the Arab Cup last year. First, Fifa sells tickets to spectators. Once the tickets are sold, it sends to the distribution system a list of tickets with their owner and the ticket details. The distribution system saves everything in a database and saves ticket ID and spectator ID pairs on the blockchain in a smart contract. Once done, it notifies spectators that their ticket is available on the mobile application. Once the tickets are in their possession, spectators can transfer their ticket to other registered spectators. When the day of the event is here, spectators scan their ticket at the entrance and enter the stadium.
+Let's start by giving an overview of the two systems. They are both ticket distribution systems. TIXnGO is developed by Secutix SA and GET Protocol is developed by GUTS ticketing. Their approach is to use the blockchain to securely and transparently store tickets and their owners. Now let's take a look at how they work. To do this, we take the example of Fifa which organized the Arab Cup last year and detail the flow from the purchase of tickets until the spectators enter the stadium. First, Fifa sells tickets to spectators through its website. Once the tickets are sold, it sends the distribution system a list of tickets with their owner and ticket details. The distribution system saves everything in a database and stores ticket ID and spectator ID pairs on the blockchain in a smart contract. Once done, it informs the spectators that their tickets are available on the mobile app. From then on, spectators can transfer their tickets to other spectators registered on the system. This feature is very useful because usually someone buys tickets and then gives them to his friends or family. On match day, spectators gain access to the stadium by scanning their ticket at the entrance.
 
-Let's now take a closer look at TIXnGO. The approach fulfills its role well and the partners are very happy with the product. However, there are many things that we believe can be improved. The first point concerns the blockchain. TIXnGO uses its own private blockchain hosted on Amazon servers. Having a private blockchain is very convenient because there are no transaction fees to pay and it is possible to easily correct errors of manipulation as well as a bug in the code. However, a private blockchain doesn't make much sense because no one except TIXnGO has access to it. Organizers and spectators use the TIXnGO API but never communicate directly with the blockchain. Therefore most of the interesting properties of the blockchain such as transparency or direct management of assets by users are lost. To overcome this problem, our approach is based on a public blockchain.
+Let's now take a closer look at TIXnGO. The approach fulfills its role well and the partners are very happy with the product. However, there are many things that we believe can be improved. The first point concerns the blockchain. TIXnGO uses its own private blockchain hosted on Amazon servers. Having a private blockchain is very convenient because there are no transaction fees to pay and it is possible to easily correct errors of manipulation as well as a bug in smart contracts. However, a private blockchain doesn't make much sense because no one except TIXnGO has access to it. Organizers and spectators use an API but never communicate directly with the blockchain. Therefore most of the interesting properties of the blockchain such as transparency or direct management of assets by users are lost. To overcome this problem, our approach is based on a public blockchain.
 
-The second point concerns business logic and general design. All the business logic of TIXnGO is managed off-chain by the backend, except the ownership of the ticket which is managed by the blockchain. This approach is very practical because it is much easier to have a business logic off-chain than on-chain. Indeed, there are many constraints such as smart contracts which cannot have an arbitrarily large complexity. In our opinion, it would be interesting to let the blockchain take care of the business logic because it would make it possible to really take advantage of the blockchain and not to use it simply as a database which is certainly very secure but which is also very expensive to operate. This would also make it possible to have a much more decentralized system and avoid a single point of failure. Our approach is to execute as much of the business logic as possible on-chain. The business logic that cannot be executed on-chain is executed off-chain and then checked on-chain. To do this we use oracles, smart contracts and indexers.
+The second point concerns business logic and general design. All the business logic of TIXnGO is managed off-chain by the backend, except the ownership of the ticket which is managed by the blockchain. This approach is very practical because it is much easier to have a business logic off-chain than on-chain. Indeed, there are many constraints such as smart contracts which cannot have an arbitrarily large complexity. In our opinion, it would be better to let the blockchain take care of the business logic because it would allow to really take advantage of the blockchain and not just use it as a database which is certainly very secure but which is also very expensive to operate. This would also make it possible to have a much more decentralized system and avoid a single point of failure. Our approach aims at executing as much of the business logic as possible on-chain. The business logic that cannot be executed on-chain is executed off-chain and then verified on-chain. To do this we use oracles, smart contracts and indexers.
 
-The third point concerns standards. TIXnGO uses homemade smart contracts that could be replaced by standards in order to avoid reinventing the wheel. There are several very useful standards, which have been extensively tested and are used by many projects. For example, it would be interesting to use the ERC721 standard to represent tickets and to keep track of their owner. The problem for TIXnGO is that it requires many system adjustments because at the moment it does not use Ethereum addresses as identifiers for users but database IDs. Our approach tends to use as much as possible the current standards in order to benefit from the work carried out by the blockchain community and to maximize the interoperability of our system with other projects.
+The third point concerns standards. TIXnGO uses homemade smart contracts that could be replaced by standards. There are several very useful standards, which have been extensively tested and are used by many projects. For example, it would be interesting to use the ERC721 standard to represent tickets and to keep track of their owner. The problem for TIXnGO is that it requires many system adjustments because at the moment it does not use Ethereum addresses as identifiers for users but database IDs. Our approach tends to use as much as possible the current standards in order to benefit from the work carried out by the blockchain community and to maximize the interoperability of our system with other projects.
 
-Finally, although TIXnGO allows the resale of tickets, it does not have yet a marketplace. We propose to build such a fully decentralized marketplace allowing secure and regulated resales of tickets.
+The fourth point, which we think is the most important, concerns custody. TIXnGO uses a custodial approach. In general, this approach is preferred by companies because it is simpler to implement and economically advantageous, especially for an exchange. For TIXnGO, this allows it to control the entire process and therefore to be able to easily intervene in the event of a problem. However, as we mentioned previously, this type of approach implies that the user is not really the owner of his assets because he delegates their management to TIXnGO. You should know that the original purpose of a blockchain is precisely to avoid this by giving control back to the user. Therefore, our approach is non-custodial. Although this approach is more restrictive and more difficult to build, we show that it is possible to design a system that achieves the same objectives as a custodial system and that also gives control back to users! To achieve this objective, we design an on-chain user management system and role-based access control.
 
-Now let's take a closer look at GET Protocol and compare it to TIXnGO. Note that as the systems are very similar, we will not go into detail so as not to repeat what has been said above. The first point to mention is that unlike TIXnGO, it is deployed on Polygon, a public blockchain. The second point to mention is that it makes somewhat better use of the blockchain. In addition to storing tickets on the blockchain, it stores events on the blockchain. This is very practical because it allows to effectively filter tickets by event. However, we feel that like TIXnGO, the system does not take full advantage of what the blockchain has to offer. The third point to mention is that it uses the ERC721 standard to represent tickets on the blockchain. Due to the popularity of this standard, this is a very good idea because it allows to have a system that can easily interoperate with other systems. Finally, like TIXnGO, it does not yet have a decentralized marketplace.
+Finally, although TIXnGO allows the resale of tickets, it does not have yet a marketplace. We propose to build a fully decentralized marketplace allowing secure and regulated resales of tickets.
 
-To conclude, we must briefly mention Taurus, a fast-growing Geneva startup. Taurus offers financial market infrastructure services and products such as a custody solution used by swiss bank. This solution allows banks to offer their customers the possibility of buying crypto assets. On top of that, they are building a regulated market, named TDX, to enable the trading and exchange of tokenized securities which is an essential and missing piece in the financial ecosystem and the first in the world as far as I know. The marketplace complies with Swiss securities law and Distributed Ledger Technology (DLT) law.
+Now let's take a closer look at the GET protocol and compare it to TIXnGO. Note that the systems being very similar, we will not go into details so as not to repeat what has been said above. About the first point, unlike TIXnGO it is deployed on Polygon, a public blockchain. This is a very good thing because it gives visibility on the system and its state to the users. About the second point, we believe it makes better use of the blockchain. In addition to tickets, it stores events on the blockchain. This is a very good idea because it makes it easy to build an index and therefore to filter tickets efficiently by event. However, we believe that like TIXnGO, the system does not take full advantage of what the blockchain has to offer. About the third point, it should be noted that it uses the ERC721 standard to represent tickets on the blockchain. Due to the popularity of this standard, this is a very good design choice as it allows the system to easily interoperate with other systems. On the fourth point, it also uses a custodial approach. All interactions with the system are done through an API. Finally, like TIXnGO, it does not yet have a decentralized marketplace.
 
-Although the business is different, it is interesting to see that another actor seeks to regulate decentralized assets as we seek to do. Unfortunately, there is no documentation and the API is not yet available. Therefore, it is difficult to understand how it works under the hood, except that it is custodial.
+To conclude, we must briefly mention Taurus, a fast-growing Geneva startup. Taurus offers financial market infrastructure services and products such as a custody solution used by Swiss bank. This solution allows banks to offer their customers the possibility of buying crypto assets. On top of that, they are building a regulated market, named TDX, to enable the trading and exchange of tokenized securities which is an essential and missing piece in the financial ecosystem and the first in the world as far as I know. The marketplace complies with Swiss securities law and Distributed Ledger Technology (DLT) law.
+
+Although the business is different, it is interesting to see that another Swiss actor seeks to regulate decentralized assets as we seek to do. Unfortunately, there is no documentation and the API is not yet available. Therefore, it is difficult to understand how it works under the hood, except that it is custodial.
 
 %%%%%%%%%%%%%%%%
 \chapter{System overview}
@@ -178,19 +174,20 @@ Highlight why individual decisions are important and/or necessary. Discuss
 how the design fits together.
 This section is usually 5-10 pages.} \\
 
-In this chapter, we first enumerate the goals that the system must achieved. Then, we describe the system and the design choices that were made. 
+In this chapter, we first enumerate the goals that the system must achieved. Then, we describe the system's components and the design choices that were made. 
 
 \section{System goals}
 
-NFTiX offers the following benefits in terms of decentralization, scalability and security.
+NFTiX seeks to provide the following advantages in terms of decentralization, scalability and security.
 
 \begin{description}
-  \item \textbf{Regulated Market}: NFTiX offers a mechanism to control the resale process so that the black market is limited.
-  \item \textbf{Decentralization}: Expect oracles, there is no single point of failure in NFTiX such as a trusted third party.
-  \item \textbf{High Throughput}: NFTiX supports thousands of daily operations (ticket issuance, transfer, resale, etc.)
+  \item \textbf{Non-custodial}: The users own and control their assets. NFTiX provides the service but cannot manipulate user assets.
+  \item \textbf{Regulated}: NFTiX offers a mechanism to control the resale process so that the black market is limited.
+  \item \textbf{Decentralized}: Expect the database, there is no single point of failure in NFTiX such as a trusted third party.
+  \item \textbf{High Throughput}: NFTiX supports thousands of daily operations such as tickets issuance, transfers, or resales.
   \item \textbf{Low Latency}: NFTiX offers low latency transaction confirmation.
-  \item \textbf{Low Costs}: The operating cost of NFTiX is low for NFTiX developers, event organizers and spectators.
-  \item \textbf{Ticket integrity, authenticity, tampering}: NFTiX ensures a high level of security so that the integrity, authenticity and unforgeability of tickets is guaranteed and no fraud is possible.
+  \item \textbf{Low Costs}: The operating cost of NFTiX is low for developers, event organizers and spectators.
+  \item \textbf{Integrity, authenticity and unforgeability}: NFTiX ensures a high level of security so that the integrity, authenticity and unforgeability of tickets is guaranteed and no fraud is possible.
 \end{description}
 
 \section{Architecture overview}
@@ -199,35 +196,35 @@ This section aims to provide an overview of the main components and their intero
 \includegraphics[width=\textwidth]{architecture_overview.png}
 
 \section{Oracles}
-Oracles play a crucial role in the system. The Oracle Identifier and Approver allow us to execute business logic outside the blockchain and verify the result on the blockchain. The Price feed oracle is used to securely bring the price of TIX against USD and ETH on the blockchain.
+Oracles play a crucial role in the system. There are two types of oracle in our system. The first two, the Identifier and the Approver, execute the business logic that cannot be executed on-chain and issue approval messages that are verified on the blockchain. The third, the Price Feed, takes care of sending the price of the TIX against the USD and the ETH on the blockchain. The TIX is an ERC20 utility token. We explain its use later.
 
-It should be noted that the oracles all have a pair of private/public keys. These keys are used to sign transactions and messages.
+It should be noted that all the oracles have a pair of private/public keys. These keys are used to sign transactions and messages.
 
-We explained previously that a signed message was returned by an oracle if the operation is approved. We also call this signed message a proof because the oracle proves that it has done its due diligence. Now let's see how this message is created. Creation takes place in two phases. The first is to hash the arguments supplied by the user. To do this, the keccak256 hash function is used. Once the hash of the arguments has been calculated, the oracle creates the signature from the private key of the oracle and the hash thanks to ECDSA.
+A message issued by an oracle is actually a proof that the oracle has done its due diligence. For example in the case of a resale, the Approver certifies that it has checked that the operation complies with the resale rules. Let's look at how such a message is created. The creation takes place in three steps. First, the oracle checks that the operation is legal. Then, the oracle hash the arguments supplied by the user. To do this, the hash function Keccak256 is used. Once the hash of the arguments has been calculated, the oracle creates a signature from its private key and the hash using ECDSA. This signature is the proof returned to the user.
 
 \subsection{Identifier}
-The Identifier oracle makes it possible to verify the identity of organizers and spectators who wish to register, to store user information on the database and to issue identification proofs allowing users to register on the Identity contract.
+The Identifier makes it possible to verify the identity of the organizers and the spectators who wish to register, to store user information on the database and to issue identification proofs allowing users to register on the Identity contract.
 
-At the moment, the oracle only verifies the Ethereum address that the user provides. To do this, the oracle sends a challenge that the user must sign and return to the oracle. The verification is successful if the Oracle manages to verify that the message has been signed by the private key corresponding to the address provided by the user. Note that, as the name suggests, the oracle should also verify the identity of the user. The verification mechanism is not implemented because outside the scope of the project. We therefore assume that the oracle performs an identity verification similar to that carried out during the onboarding of Coinbase, Binance or Swissborg, i.e. the user sends photos of his identity card and his face which are then verified thanks to machine learning.
+At the moment, the oracle only verifies the Ethereum address that the user provides. To do this, the oracle sends a challenge that the user must sign and return to the oracle. The verification is successful if the oracle manages to verify that the message has been signed by the private key corresponding to the address provided by the user. Note that, as the name suggests, the oracle should also verify the identity of the user in order to comply with KYC rule. This verification mechanism is not implemented because outside of the scope of the project. We therefore assume that the oracle performs an identity verification similar to that carried out during the onboarding of Coinbase, Binance or Swissborg, i.e. the user sends photos of his identity card and his face which are then verified thanks to machine learning.
 
-Once the verification is successful, the oracle saves the information that the user has provided and issues a proof of identification built from the Ethereum address and the group to which the user belongs.
+Once the verification is successful, the oracle saves the information that the user has provided and issues a proof of identification built from the Ethereum address and the group to which the user belongs. The group allow to distinguish spectators from organizers and to build the role-based access control. We will come back to this later.
 
 \subsection{Approver}
-The Approver Oracle is responsible for verifying that all ticket transactions initiated by spectators comply with the rules imposed by the organizers and for issuing proofs of approval allowing spectators to carry out resale and swap transactions.
+The Approver is responsible for verifying that the operations on tickets initiated by spectators comply with the rules imposed by the organizers and for issuing proofs of approval allowing spectators to carry out resale and swap transactions. We explain later how resale and swap transactions work.
 
-For a resale transaction, the proof is built from the address of the ticket owner, the token ID, the resale price and the address of the optional buyer. For a swap transaction, the proof is constructed from the address of the ticket owner, the token ID of the ticket offered, the event ID of the wanted ticket and the address of the optional buyer. Note that if the optional buyer is not specified, address zero is used to construct the proof.
+For a resale transaction, the proof is built from the address of the ticket owner, the token ID (remember that we use non fungible tokens to represent tickets on the blockchain), the resale price and the address of an optional buyer chosen by the seller. If the optional buyer is not specified, the zero address is used to construct the proof. For a swap transaction, the proof is constructed from the address of the user A, the address of the user B, the ID of the token A and the ID of the token B.
 
-The approbation procedure of a transaction works like this. First, the spectator sends a transaction approval request to the Approver oracle providing it with the data that will be used to construct the transaction. The oracle verifies that the transaction respects the rules and issues the proof of approval. The spectator constructs the transaction with the data that he transmitted to the oracle and with the proof that the oracle returned to him. Finally, it sends the transaction to the blockchain which will be processed by the Exchange smart contract.
+The approval procedure of a transaction works like this. First, the spectator sends a transaction approval request to the Approver providing it with the data that will be used to construct the transaction. The oracle verifies that the transaction respects the rules and issues a proof of approval. The spectator can now use the proof to construct a transaction with the data that he transmitted to the oracle and with the proof that the oracle returned to him.
 
 \subsection{Price feed}
-The price feed oracle regularly sends the price of TIX against USD and ETH to the TIX smart contract. As a reminder, smart contracts cannot communicate with the outside world and therefore the TIX smart contract has no way of knowing the price of the TIX if it is not transmitted to it.
+The Price Feed regularly sends the price of TIX against USD and ETH to the TIX smart contract. As a reminder, smart contracts cannot communicate with the outside world and therefore the TIX smart contract has no way of knowing the price of the TIX if it is not transmitted to it.
 
-This oracle works differently from the other two oracles. It communicates directly with the blockchain and therefore does not need to issue proofs. Indeed, as the transactions that the oracle sends are signed, the smart contract only needs to verify that the initiator of the transaction is the price feed oracle in order to ensure that the price update is legitimate. Note that the TIX smart contract stores the address of the oracle in order to verify that the transaction comes from it and not from a malicious user.
+This oracle works differently from the other two oracles. It communicates directly with the blockchain and therefore does not need to issue proofs. Indeed, as the transactions that the oracle sends are signed, the smart contract only needs to verify that the initiator of the transaction is the Price Feed in order to ensure that the price update is legitimate. Note that the TIX smart contract stores the address of the Price Feed in order to verify that the transaction comes from it and not from a malicious user.
 
 \section{Graph node}
-The graph node execute the graph protocol. It allows us to make complex data requests that would be very difficult to do directly on the blockchain.
+The graph node runs the graph protocol and allows us to make complex data queries that would be very difficult to do directly on the blockchain.
 
-Let's start by understanding why it is difficult to do complex queries on the blockchain. There are two major limitations. The first is the gas limit. Indeed, like transactions, calls cannot have a complexity exceeding a certain limit. If the size of the returned data is too large, the call fails. However, this limitation is easily overcome if the data is simple. All you have to do is split a large query into several sub-queries. For example, if we want to obtain the balance of all the accounts of an ERC20 contract, we can query the first 100 balances in a first request, then the following 100 in a second request and so on. This requires two data structures on the smart contract, a list and a hashmap. The list stores users' balances and the hashmap maps a user's address to their balance's position in the list. This approach makes it possible to update a user's balance because the position of his balance is tracked by the hashmap and it is also possible to return all the balances by iterating over the list.
+Let's start by understanding why it is difficult to do complex queries on the blockchain. There are two major limitations. The first is the gas limit. Like transactions, calls cannot have a complexity exceeding a certain limit. If the size of the returned data is too large, the call fails. However, this limitation is easily overcome if the data is simple. All you have to do is split a large query into several sub-queries. For example, if we want to obtain the balance of all the accounts of an ERC20 contract, we can query the first 100 balances in a first request, then the following 100 in a second request and so on. This requires two data structures on the smart contract, a list and a hashmap. The list stores users' balances and the hashmap maps a user's address to their balance's position in the list. This approach makes it possible to update a user's balance because the position of his balance is tracked by the hashmap and it is also possible to return all the balances by iterating over the list.
 
 With this approach, it is also possible to easily create simple filters. Let's go back to the previous example and assume that the smart contract stores two additional hashmaps. The first hashmap tracks premium accounts and the second hashmap tracks VIP accounts. If we want to get the balance of all premium and VIP accounts, we can simply iterate over the list of accounts and return only the accounts tracked by one of the two hashmaps.
 
@@ -264,6 +261,9 @@ This section describes the core of NFTiX which is responsible for applying the b
 \subsection{Initial design}
 
 \subsubsection{Identity smart contract}
+
+EXPLAIN THE ROLE BASED ACCESS CONTROL
+
 The Identity contract allows organizers and spectators to register and unregister from the system. It allows NFTiX to revoke a organizer or a spectator who behaves inappropriately. It stores the addresses of registered organizers and spectators. It stores the Identifier oracle's public key so that it can verify the signature of approval messages issued by the oracle when an organizer or spectator registers. You can find the flow diagram of the user registration in the figure  \hyperref[fig:user_registration]{ \textit{User registration}}.
 
 \begin{figure}[h!]
@@ -272,7 +272,7 @@ The Identity contract allows organizers and spectators to register and unregiste
   \label{fig:user_registration}
 \end{figure}
 
-This contract defines and applies the role-based access control policy. For now, the policy is very simple but it can be extended as needed. There are four roles: ORGANIZER, SPECTATOR, UNREGISTERED and REVOKED. An organizer who registers gets the ORGANIZER role and a spectator who registers gets the SPECTATOR role. When an organizer or spectator unregisters, their address is marked as UNREGISTERED. If NFTiX bans a user from the system for inappropriate behavior, the address is marked as REVOKED.
+This contract defines and applies the role-based access control policy. For now, the policy is very simple but it can be extended as needed. There are four group: ORGANIZER, SPECTATOR, UNREGISTERED and REVOKED. An organizer who registers gets the ORGANIZER role and a spectator who registers gets the SPECTATOR role. When an organizer or spectator unregisters, their address is marked as UNREGISTERED. If NFTiX bans a user from the system for inappropriate behavior, the address is marked as REVOKED.
 
 \subsubsection{TIX smart contract}
 This contract manages the utility token of NFTiX, the TIX token. This contract is ERC20 compliant. The TIX is used to pay platform usage fees and to purchase resale tickets. Indeed, the platform generates revenue through the activity of its users. For example, when an organizer creates an event, he must pay a creation fee. Or, when a resale is made, a percentage of the resale is taken and shared between the event organizer and NFTiX.
@@ -432,6 +432,8 @@ This is not intended to be a low level description of every line of code that
 you wrote but covers the implementation aspects of the projects.
 This section is usually 3-5 pages.} \\
 
+To make this report not to long there is not much details concerning the implementation and how some algo works. However if you are interessted on details, You can check the documentation that is available here.
+
 
 %%%%%%%%%%%%%%%%%%%%
 \chapter{Evaluation}
@@ -586,6 +588,8 @@ TODO: instead of a token we can also emit a tokenized security with the help of 
 TODO: exchange with liquidity to buy back tickets in exchange of TIX. This could be a good incentive to fight black market and side channel payment.
 
 TODO: list potential on-chain rules: limit the number of ticket hold by single spectator by event, etc
+
+TODO: we could use fact registry contract instead of issue proof
 
 %%%%%%%%%%%%%%%%%%%%
 \chapter{Conclusion}
