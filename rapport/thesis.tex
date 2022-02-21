@@ -8,8 +8,9 @@
 % Options: MScThesis, BScThesis, MScProject, BScProject
 \usepackage[MScThesis,lablogo]{EPFLreport}
 \usepackage{xspace}
+\usepackage{nicematrix}
 
-\title{NFTiX: A Non-custodial and Regulated Decentralized Marketplace for the Ticketing Industry}
+\title{NFTiX: A Non-custodial Decentralized Ticket Engine Enabling Secure and Regulated Ticket Exchange Between Untrusted Parties}
 \author{Yann Gabbud}
 \authorAddress{yann.gabbud@epfl.ch}
 \affiliation{Distributed Computing Laboratory \\
@@ -95,7 +96,7 @@ In this section, we introduce the background needed to understand this thesis. W
     \item \textbf{Ticket Resale}: A spectator who owns a ticket can resell it to someone else. This is similar to a ticket transfer except that in addition to the ownership transfer there is also a money transfer. We say the current owner of the ticket is the seller and the person buying the ticket is the buyer. Therefore the seller transfers the ticket and the buyer transfers the money.
     \item \textbf{Transfer and resale rules}: Tickets are subject to transfer and resale rules defined by the organizer. These rules define a policy which mainly aims to fight against the black market and fraud. An example of a transfer rule might be that it is prohibited to transfer a ticket to a fan banned for hooliganism. An example of a resale rule might be that the resale price of a ticket cannot exceed more than 20\% of the original price.
     \item \textbf{Ticketing system}: A ticketing system, like Secutix, is a ticket management tool. An event organizer uses a ticketing system to create and manage events, to create, manage and sell tickets for an event, and to provide support and assistance to spectators who purchase tickets for its events.
-    \item \textbf{Ticket Distribution System}: A ticket distribution system, such as TIXnGO, is a tool for managing the distribution of digital tickets. A ticket distribution system does not replace a ticketing system but is complementary. Often it also helps to fight against fraud and black market. In general, there are three main components. The first component is a management interface used by the organizer to distribute tickets purchased by spectators and to track who the current owners are. The second component is a ticket wallet which is used by the spectator to store, display, transfer and resell tickets. The third component is a backend which execute the requests of the organizers and the spectators. It is important to note that only a registered organizer can use the management interface. Therefore, only a genuine organizer can distribute tickets such that no fake tickets are in circulation.
+    \item \textbf{Ticket Distribution System}: A ticket distribution system, such as TIXnGO, is a tool for managing the distribution of digital tickets. A ticket distribution system does not replace a ticketing system but is complementary. Often it also helps to fight against fraud and black market. In general, there are three main components. The first component is a management interface used by the organizer to distribute tickets purchased by spectators and to track who the current owners are. The second component is a ticket wallet which is used by the spectator to store, display, transfer and resell tickets. The third component is a ticket engine which execute the requests of the organizers and the spectators. It is important to note that only a registered organizer can use the management interface. Therefore, only a genuine organizer can distribute tickets such that no fake tickets are in circulation.
     \item \textbf{Marketplace}: A marketplace is a platform that allows the secure sale of assets between parties that do not trust each other. In our case, the assets are tickets. The marketplace displays tickets that are on resale with their resale price. A seller can put a ticket up for resale and withdraw it later if they change their mind. A buyer can purchase a ticket on resale.
 \end{description}
 
@@ -174,16 +175,16 @@ Highlight why individual decisions are important and/or necessary. Discuss
 how the design fits together.
 This section is usually 5-10 pages.} \\
 
-In this chapter, we first enumerate the goals that the system must achieved. Then, we describe the system's components and the design choices that were made. 
+In this chapter, we first enumerate the goals that the system must achieved. Then, we describe the system's components and the design choices that were made. Three iterations were made before coming up with the final version. Therefore we describe for each component the initial design and then the improvements that were made, if any.
 
 \section{System goals}
 
-NFTiX seeks to provide the following advantages in terms of decentralization, scalability and security.
+NFTiX is a ticket engine that seeks to facilitate ticket exchange between untrusted parties and to provide the following advantages in terms of decentralization, scalability and security.
 
 \begin{description}
   \item \textbf{Non-custodial}: The users own and control their assets. NFTiX provides the service but cannot manipulate user assets.
+  \item \textbf{Decentralized}: There is no single point of failure in NFTiX such as a trusted third party.
   \item \textbf{Regulated}: NFTiX offers a mechanism to control the resale process so that the black market is limited.
-  \item \textbf{Decentralized}: Expect the database, there is no single point of failure in NFTiX such as a trusted third party.
   \item \textbf{High Throughput}: NFTiX supports thousands of daily operations such as tickets issuance, transfers, or resales.
   \item \textbf{Low Latency}: NFTiX offers low latency transaction confirmation.
   \item \textbf{Low Costs}: The operating cost of NFTiX is low for developers, event organizers and spectators.
@@ -191,9 +192,19 @@ NFTiX seeks to provide the following advantages in terms of decentralization, sc
 \end{description}
 
 \section{Architecture overview}
-This section aims to provide an overview of the main components and their interoperability. You can find more details about the components in the following sections.
 
-\includegraphics[width=\textwidth]{architecture_overview.png}
+\begin{figure}[h!] 
+  \centering
+  \includegraphics[width=\textwidth]{architecture_overview.png}
+  \caption{Architecture overview}
+  \label{fig:architecture_overview}
+\end{figure}
+
+This section aims to provide an overview of the main components and their interoperability. As you can see on the figure \hyperref[fig:architecture_overview]{\ref{fig:architecture_overview}}, the system is split in to parts, on-chain and off-chain. The on-chain part contains four smart contracts working together to enforce the business logic. The Identity contract is responsible for tracking the registered users and enforcing the access control policy. The Ticketing contract is responsible for managing events and tickets. The Exchange contract is responsible for ticket resale and ticket swap. The TIX contract is an ERC20 utility token. This token powers the economics of NFTiX. The fees of the platform and the ticket purchase are paid in TIX.  
+
+The off-chain part contains the oracle which are crucial because they allows us to securely execute the business logic that cannot be execute on-chain. The Identifier is responsible for verifying the identity of the new user and allowing them to register on the Identity contract. The Approver is responsible for verifying that the operations on tickets are approved by the organizers. The price Feed is responsible for bringing on-chain the price of the TIX against the ETH and the USD. 
+
+Finally, the graph node is responsible for indexing the smart contract such that we can easily query data. The marketplace is responsible for listing the resale and swap offers. In the next section we give a more details description of each components.
 
 \section{Oracles}
 Oracles play a crucial role in the system. There are two types of oracle in our system. The first two, the Identifier and the Approver, execute the business logic that cannot be executed on-chain and issue approval messages that are verified on the blockchain. The third, the Price Feed, takes care of sending the price of the TIX against the USD and the ETH on the blockchain. The TIX is an ERC20 utility token. We explain its use later.
@@ -221,50 +232,18 @@ The Price Feed regularly sends the price of TIX against USD and ETH to the TIX s
 
 This oracle works differently from the other two oracles. It communicates directly with the blockchain and therefore does not need to issue proofs. Indeed, as the transactions that the oracle sends are signed, the smart contract only needs to verify that the initiator of the transaction is the Price Feed in order to ensure that the price update is legitimate. Note that the TIX smart contract stores the address of the Price Feed in order to verify that the transaction comes from it and not from a malicious user.
 
-\section{Graph node}
-The graph node runs the graph protocol and allows us to make complex data queries that would be very difficult to do directly on the blockchain.
-
-Let's start by understanding why it is difficult to do complex queries on the blockchain. There are two major limitations. The first is the gas limit. Like transactions, calls cannot have a complexity exceeding a certain limit. If the size of the returned data is too large, the call fails. However, this limitation is easily overcome if the data is simple. All you have to do is split a large query into several sub-queries. For example, if we want to obtain the balance of all the accounts of an ERC20 contract, we can query the first 100 balances in a first request, then the following 100 in a second request and so on. This requires two data structures on the smart contract, a list and a hashmap. The list stores users' balances and the hashmap maps a user's address to their balance's position in the list. This approach makes it possible to update a user's balance because the position of his balance is tracked by the hashmap and it is also possible to return all the balances by iterating over the list.
-
-With this approach, it is also possible to easily create simple filters. Let's go back to the previous example and assume that the smart contract stores two additional hashmaps. The first hashmap tracks premium accounts and the second hashmap tracks VIP accounts. If we want to get the balance of all premium and VIP accounts, we can simply iterate over the list of accounts and return only the accounts tracked by one of the two hashmaps.
-
-However, this approach is very limited because it is not possible to create queries as complex and rich as SQL would allow. There is not built-in primitive such as merge, join or filter to manipulate data. Therefore, if one wants to implement a complex query on a smart contract, he needs to implement by himself all these primitives. The code of the function would be very complicated to write and the request would fail as soon as the number of data becomes too large because the maximum gas limit would be reached.
-
-The graph overcomes this limitation by creating an index outside the blockchain. The index is built through event emitted by transactions and can be queried through graphql \footnote{https://graphql.org/} queries.
-
-Here is an overview of how the indexing works. Let's take for example an ERC20 contract storing the balance of users. When a user transfers tokens to another user, he first creates a transaction with the following fields: his address, the recipient's address and the amount he wants to transfer. The user sends the transaction to the blockchain which executes it. When the transaction is mined an event containing the three preceding fields is emitted and logged. The graph node listens to this event and updates its index by decrementing the sender's balance and incrementing the receiver's balance. You can find an overview in the figure \hyperref[fig:graph_node]{ \textit{Graph node}}.
-
-\begin{figure}[h!] 
-  \centering
-  \includegraphics[scale=0.6]{graph_node.png}
-  \caption{Graph node}
-  \label{fig:graph_node}
-\end{figure}
-
-Now that we understand why it is difficult to make complex queries or obtain bulk data, let's look at its use in our system. The graph node maintains three indexes. The first stores all user information, i.e. address, group, balance in TIX, TIX allowance to Ticketing contract, TIX allowance to Exchange contract (only for the spectator). The second stores all event information, i.e. event ID, organizer, name, location, opening date and time, closing date and time, state, number of tickets. The third stores all ticket information, i.e. token ID, ticket ID, event ID, owner, state, status (on swap / on resale). To build and maintain these three indexes, the graph node listens to events sent by the four smart contracts. The list of events can be found in the \hyperref[sec:appendix_a]{Appendix A}.
-
-\section{Database}
-The database has three uses. It stores the data of the organizers and the spectators, i.e. the name, the first name, the address of residence, the email address and the Ethereum address. It stores the transfer and resale rules as well as the data necessary for their application. Finally, it stores the indexes created by the graph protocol.
-
-TODO: graph node, marketplace, identifier, approver
-
 \section{Ethereum blockchain}
-The Ethereum blockchain is the cornerstone of the system. It is it who is responsible for operating the smart contacts that implement the business logic.
+The Ethereum blockchain is the cornerstone of the system. It is the one responsible for operating the smart contacts that implement the business logic.
 
 This component must be robust and battle tested to ensure that the execution environment is safe. We chose Ethereum because it is the most mature blockchain at the moment. It has been tested extensively. It hosts many projects. And it has a complete development and test environment.
 
 However, it has a big disadvantage, the high cost of transaction fees induced by the congestion of its network. Unfortunately, it suffers from its popularity. However, many scalability solutions are under development and things should improve. In the meantime, it is possible to deploy the system on Polygon which is EMV-compatible and which offers a good level of security.
 
 \section{Smart contracts}
-This section describes the core of NFTiX which is responsible for applying the business logic. The core is made up of four interacting smart contracts, the Identity contract, the TIX contract, the Ticketing contract and the Exchange contract. We describe two versions: the initial version and the upgraded version. The initial version is the implementation of the initial design we made. The initial design contains a few mistakes that have not been detected during the design phase. The upgraded version fix these problems.
+This section describes the core of NFTiX which is responsible for enforcing the business logic. The core is made up of four interacting smart contracts, the Identity contract, the TIX contract, the Ticketing contract and the Exchange contract. For each contract we first describe the initial design and then the improvement that were made fixing the initial design mistakes. You can find several flow diagrams that should help understand how NFTiX works. In these diagrams the steps highlighted in red are the off-chain operations. In blue are the transactions sent to the blockchain. And finally in green are the on-chain operations.
 
-\subsection{Initial design}
-
-\subsubsection{Identity smart contract}
-
-EXPLAIN THE ROLE BASED ACCESS CONTROL
-
-The Identity contract allows organizers and spectators to register and unregister from the system. It allows NFTiX to revoke a organizer or a spectator who behaves inappropriately. It stores the addresses of registered organizers and spectators. It stores the Identifier oracle's public key so that it can verify the signature of approval messages issued by the oracle when an organizer or spectator registers. You can find the flow diagram of the user registration in the figure  \hyperref[fig:user_registration]{ \textit{User registration}}.
+\subsection{Identity smart contract}
+The Identity contract allows organizers and spectators to register and unregister from the system. It allows NFTiX to revoke a organizer or a spectator who behaves inappropriately. It stores the addresses of registered organizers and spectators. It stores the Identifier oracle's public key so that it can verify the identification proofs issued by the oracle when an organizer or spectator registers. You can find the flow diagram of the user registration in the figure  \hyperref[fig:user_registration]{\ref{fig:user_registration}}.
 
 \begin{figure}[h!]
   \includegraphics[width=\textwidth]{user_registration.png}
@@ -272,18 +251,27 @@ The Identity contract allows organizers and spectators to register and unregiste
   \label{fig:user_registration}
 \end{figure}
 
-This contract defines and applies the role-based access control policy. For now, the policy is very simple but it can be extended as needed. There are four group: ORGANIZER, SPECTATOR, UNREGISTERED and REVOKED. An organizer who registers gets the ORGANIZER role and a spectator who registers gets the SPECTATOR role. When an organizer or spectator unregisters, their address is marked as UNREGISTERED. If NFTiX bans a user from the system for inappropriate behavior, the address is marked as REVOKED.
+This contract also defines and applies the role-based access control policy. For now, the policy is very simple but it can be extended as needed. There are four group: ORGANIZER, SPECTATOR, UNREGISTERED and REVOKED. An organizer who registers gets the ORGANIZER role and a spectator who registers gets the SPECTATOR role. When an organizer or spectator unregisters, their address is marked as UNREGISTERED. If NFTiX bans a user from the system for inappropriate behavior, the address is marked as REVOKED.
 
-\subsubsection{TIX smart contract}
-This contract manages the utility token of NFTiX, the TIX token. This contract is ERC20 compliant. The TIX is used to pay platform usage fees and to purchase resale tickets. Indeed, the platform generates revenue through the activity of its users. For example, when an organizer creates an event, he must pay a creation fee. Or, when a resale is made, a percentage of the resale is taken and shared between the event organizer and NFTiX.
+\subsection{TIX smart contract}
+
+\subsubsection{Initial design}
+This contract manages the utility token of NFTiX, the TIX. This contract is ERC20 compliant. The TIX is used to pay platform usage fees and to purchase tickets on resale. It should be noted that the platform generates revenue through the activity of its users. For example, when an organizer creates an event, he must pay a creation fee. When he mints a token, he must pay a minting fee. When a spectator purchases a ticket on resale, a percentage of the resale price is taken and shared between the event organizer and NFTiX.
 
 The contract stores the price of TIX against dollars and ETH. These prices are regularly updated by the price feed oracle. The smart contract also stores the public key of this oracle so that only it can update the prices.
 
-Users can request the current price of TIX against dollars or ETH. They can ask how many tokens an amount in dollars or ETH is worth. They can also buy TIX with ETH or sell TIX and receive ETH in return. When buying, TIX are minted and when selling, TIX are burned. Finally, the admin of NFTiX can request the ETH balance of the contract and remove or add ETH in the smart contract.
+Users can request the current price of TIX against dollars or ETH. They can ask how many TIX an amount in USD or ETH is worth. They can buy TIX with ETH or sell TIX and receive ETH in return. When buying, TIX are minted and when selling, TIX are burned. They can transfer TIX to someone else. Finally, the admin of NFTiX can request the ETH balance of the contract and remove or add ETH in the smart contract.
 
-It is important to note that the token has no real use in itself because we could very well use ether instead. However, it does show to Secutix SA how a utility token can be integrated into the system and used by users. You will find more information on the potential use of the token in the future work section.
+It is important to note that the token has no real use in itself because we could use ETH instead of TIX. However, it does show to Secutix SA how a utility token can be integrated into the system and used by users. You will find more information on the potential use of the token in the future work section.
 
-\subsubsection{Ticketing smart contract}
+\subsubsection{improvements}
+We bring a small improvement to the ERC20 standard that we think is really useful to reduce the number of transaction required when TIX are exchange against another asset such as a ticket. This improvement consists of creating an off-chain proof allowing a smart contract to transfer some of their TIX without having to do a approval transaction first. We call this an externally approved transfer. This kind of approval is really useful to build the exchange. We will come back on its usage later.
+
+Here is how it works. The user creates a TIX approval proof with the address of the approved contract, his address, the address of the receiver and the amount to transfer. The proof is then put as argument in a transaction and is checked by a contract. Note that this kind of approval must be used with caution. We give an analysis of what could go wrong if this mechanism is misused in the security chapter.
+
+\subsection{Ticketing smart contract}
+
+\subsubsection{Initial design}
 This contract manages events and tickets. As the tickets are represented by NFTs, the contract complies with the ERC721 standard.
 
 Let's start by detailing the events. Events are represented by a data structure containing the following fields: an event ID, the address of the organizer, the name of the event, the place, the opening date and time, the closing date and time and finally the state of the event. 
@@ -296,7 +284,7 @@ Now let's take a look at tickets. A ticket is made up of four fields: a token ID
 
 Let's now look at the interaction of organizers and spectators with the smart contract. First, it should be noted that some smart contract methods, such as event creation, can only be performed by an organizer. If a spectator attempts to execute one of these methods, the transaction will be reverted. To apply this restriction, the smart contract queries the Identity smart contract to find out if the initiator of the transaction is an organizer. Secondly, it should be noted that an organizer can perform an operation, for example minting a ticket, only if it is related to one of his events. If an organizer tries to interact with assets that they don't own, the transaction is reverted.
 
-An organizer can interact with the contract to register an event. To do this, he must provide all the fields listed above and pay the registration fee. This fee is paid in TIX. It is automatically taken from the organizer's balance. Therefore, the organizer must first have sufficient TIX and approve \footnote{https://tokenallowance.io/} the smart contract to transfer the registration fee amount on its behalf. If either of these two conditions are not satisfied, the transaction is reverted. Note that if the opening date and time is after the closing date and time, the transaction also fails. Once an event is registered, its organizer can update its fields if an error was made during registration. You can find the flow diagram of the event registration in the figure  \hyperref[fig:event_registration]{ \textit{Event registration}}.
+An organizer can interact with the contract to register an event. To do this, he must provide all the fields listed above and pay the registration fee. This fee is paid in TIX. It is automatically taken from the organizer's balance. Therefore, the organizer must first have sufficient TIX and approve \footnote{https://tokenallowance.io/} the smart contract to transfer the registration fee amount on its behalf. If either of these two conditions are not satisfied, the transaction is reverted. Note that if the opening date and time is after the closing date and time, the transaction also fails. Once an event is registered, its organizer can update its fields if an error was made during registration. You can find the flow diagram of the event registration in the figure  \hyperref[fig:event_registration]{\ref{fig:event_registration}}.
 
 \begin{figure}[h!]
   \includegraphics[width=\textwidth]{event_registration.png}
@@ -304,7 +292,7 @@ An organizer can interact with the contract to register an event. To do this, he
   \label{fig:event_registration}
 \end{figure}
 
-An organizer can mint tickets for his events. To do this, it must provide an event ID that exists, a ticket ID, and an address of a registered spectator who will own the ticket. If the event ID is unknown or if the address does not match a registered spectator, the operation is reverted. The organizer must also pay a minting fee for each minted ticket. The payment of the minting fee is analogous to the payment of the registration fee. The smart contract supports batch injections to make life easier for the organizer. To do this, the organizer must provide an event ID, a ticket ID list and an address list. You can find the flow diagram of the minting in the figure  \hyperref[fig:minting]{ \textit{Minting}}.
+An organizer can mint tickets for his events. To do this, it must provide an event ID that exists, a ticket ID, and an address of a registered spectator who will own the ticket. If the event ID is unknown or if the address does not match a registered spectator, the operation is reverted. The organizer must also pay a minting fee for each minted ticket. The payment of the minting fee is analogous to the payment of the registration fee. The smart contract supports batch injections to make life easier for the organizer. To do this, the organizer must provide an event ID, a ticket ID list and an address list. You can find the flow diagram of the minting in the figure  \hyperref[fig:minting]{\ref{fig:minting}}.
 
 \begin{figure}[h!]
   \includegraphics[width=\textwidth]{minting.png}
@@ -314,7 +302,7 @@ An organizer can mint tickets for his events. To do this, it must provide an eve
 
 An organizer can burn or update the status of their tickets. This operation is analogous to minting and can also be executed by batch. However, it does not include any fees.
 
-A spectator can transfer a ticket to another spectator. For a transfer to be executed successfully, the transaction initiator must be the ticket owner, the ticket recipient must be a registered viewer, the event status must be OPEN, and the event status must be ticket is VALID. You can find the flow diagram of the transfer in the figure \hyperref[fig:transfer]{ \textit{Transfer}}.
+A spectator can transfer a ticket to another spectator. For a transfer to be executed successfully, the transaction initiator must be the ticket owner, the ticket recipient must be a registered viewer, the event status must be OPEN, and the event status must be ticket is VALID. You can find the flow diagram of the transfer in the figure \hyperref[fig:transfer]{\ref{fig:transfer}}.
 
 \begin{figure}[h!]
   \centering
@@ -325,18 +313,25 @@ A spectator can transfer a ticket to another spectator. For a transfer to be exe
 
 Finally, anyone can get all the information related to an event or a ticket by providing the specific event ID or token ID.
 
-\subsubsection{Exchange smart contract}
-The Exchange smart contract allows the spectator to resell or swap their ticket in complete safety. The contract lists all resale and swap offers. In addition, this smart contract verifies that each operation has been approved by the Oracle Approver before executing it.
+\subsubsection{Improvements}
+To pay the event registration and the minting fee, the organizer need to approve the Ticketing contract to transfer some of his TIX to NFTiX. It means that the organizer must first do a approval transaction in the TIX contract and then an event registration transaction in the Ticketing smart contract. Doing two transaction is not ideal because the organizer has to pay two times the base gas fee. However, if the organizer create an approval proof to authorize the Ticketing contract to make the TIX transfer on its behalf. With this approach, the organizer only need to do a single transaction and the event registration is now atomic.
+
+As you can see this externally approved transfer are very useful. We extend the ERC721 standard with this same mechanism. Having this mechanism in the TIX contract and the Ticketing contract enable us to make atomic resale and swap. We details this in the next section.
+
+We also want to mention an improvement that has finally not be kept. With the current design a single smart contract handle all the events and all the tickets for all the organizers. It could be useful to have a dedicated Ticketing contract per organizer in order to not mix data of different organizer together and to be able to have a specific on-chain logic per organizer. To do that we can use a Factory contract similar to the one of UniswapV3. When an organizer registers an event on the Factory, it deploys a Ticketing smart contract dedicated for this event. If we want a specific business logic we can manually deploy a Ticketing contract and then register it in the Factory contract. We finally do not keep this improvement because we want keep a generic and simple on-chain logic. For specific business logics we prefer to use oracles.
+
+\subsection{Exchange smart contract}
+
+\subsubsection{Initial design}
+The Exchange smart contract allows the spectator to resell and swap their ticket in complete safety. The contract lists all resale and swap offers. In addition, this smart contract verifies that each operation has been approved by the Approver before executing it.
 
 Let's start with ticket resale. The resale takes place in two stages. In the first stage the seller creates a resale offer and in the second stage a buyer accepts the offer.
 
-TODO: explain that the seller MUST approve the Exchange contract to handle the ticket on his behalf
-
-To create the resale offer, the seller must specify which token they want to resell and at what price in USD. If he wishes, he can specify an optional buyer. By specifying an optional buyer, only this person can accept the resale offer. If someone else tries to accept the offer, the transaction is reverted. The seller must also attach the approval message signed by the Approver Oracle. The transaction succeeds if the following conditions are met. There is no existing offer to resell this token. There is no existing swap offer for this token. The initiator of the transaction is the owner of the token. The price is not negative. The optional buyer, if defined, is a registered spectator. The approval message is valid and has been signed by the Approver Oracle. Note that it is possible to cancel a resale offer as long as it has not yet been accepted.
+To create the resale offer, the seller must first authorize the Exchange contract to operate its ticket. Then, he must specify which token he want to resell and at what price in USD. If he wishes, he can specify an optional buyer. By specifying an optional buyer, only this person can accept the resale offer. If someone else tries to accept the offer, the transaction is reverted. The seller must also attach the approval message signed by the Approver. The transaction succeeds if the following conditions are met. There is no existing offer to resell this token. There is no existing swap offer for this token. The initiator of the transaction is the owner of the token. The price is not negative. The optional buyer, if defined, is a registered spectator. The approval message is valid and has been signed by the Approver Oracle. Note that it is possible to cancel a resale offer as long as it has not yet been accepted.
 
 To accept the resale offer, the buyer must specify which token they wish to purchase and approve the smart contract to transfer an amount in TIX equivalent to the resale price. Note that the sale price is specified in USD but the transaction is made in TIX. To find out how many TIXs need to be approved, the buyer can request the current resale price from the smart contract by providing the token ID of the ticket they wish to purchase. The transaction succeeds if the following conditions are met. A resale offer for the token exists. The buyer is a registered spectator. The buyer is the optional buyer, if specified. The approved amount is sufficient to satisfy the resale.
 
-Note that a fee is taken on each resale. This fee is a percentage of the resale amount. The purpose of this fee is to cover the operating costs of NFTiX and to give a commission to the organizer of the event. The resale amount is split into three shares: the seller share, the NFTiX share and the organizer share which are respectively 98\%, 1\% and 1\% of the resale amount. The seller and the buyer pay each 50\% of this fee. You can find the flow diagram of the resaleV1 in the figure \hyperref[fig:resaleV1]{ \textit{ResaleV1}}.
+Note that a fee is taken on each resale. This fee is a percentage of the resale amount. The purpose of this fee is to cover the operating costs of NFTiX and to give a commission to the organizer of the event. The resale amount is split into three shares: the seller share, the NFTiX share and the organizer share which are respectively 98\%, 1\% and 1\% of the resale amount. The seller and the buyer pay each 50\% of this fee. You can find the flow diagram of the resaleV1 in the figure \hyperref[fig:resaleV1]{\ref{fig:resaleV1}}.
 
 \begin{figure}[h!]
   \includegraphics[width=\textwidth]{resaleV1.png}
@@ -348,7 +343,7 @@ The swap works analogously to the resale. The major difference is that during a 
 
 To create a swap offer, the one making the offer must specify which token he wishes to swap and for which event he wishes to receive a token in exchange. As for the resale, he can specify an optional buyer and he must attach the approval message signed by the Approver oracle. The transaction succeeds if the following conditions are met. There is no existing offer to resell this token. There is no existing swap offer for this token. The event whose ticket is wanted by the creator of the offer exists. The initiator of the transaction is the owner of the token. The optional buyer, if defined, is a registered viewer. The approval message is valid and has been signed by the Oracle Approver. It is also possible to cancel a swap offer as long as it has not yet been accepted.
 
-To accept the swap offer, the buyer must specify which offer he wishes to accept and which token he wishes to give in exchange. The transaction succeeds if the following conditions are met. The token is currently on resale. The buyer is a registered spectator. The token provided by the offer acceptor must be part of the desired event. The buyer is the optional buyer, if specified. You can find the flow diagram of the swapV1 in the figure \hyperref[fig:swapV1]{ \textit{SwapV1}}.
+To accept the swap offer, the buyer must specify which offer he wishes to accept and which token he wishes to give in exchange. The transaction succeeds if the following conditions are met. The token is currently on resale. The buyer is a registered spectator. The token provided by the offer acceptor must be part of the desired event. The buyer is the optional buyer, if specified. You can find the flow diagram of the swapV1 in the figure \hyperref[fig:swapV1]{\ref{fig:swapV1}}.
 
 \begin{figure}[h!]
   \includegraphics[width=\textwidth]{swapV1.png}
@@ -358,18 +353,18 @@ To accept the swap offer, the buyer must specify which offer he wishes to accept
 
 TODO: add small description of the flow diagrams. For instance, explain what is tokenId\_A and the optional participant.
 
-\subsection{Upgraded design}
+\subsubsection{Improvements}
+Although the implementation shows that the initial design works, there is one point that is not satisfactory. When a spectator creates a resale offer, he must make two transactions. The first transaction authorizes the exchange contract to transfer the spectator's ticket. The second transaction creates the resale offer. The spectator who buys the ticket in resale must also make two transactions. The first gives the authorization to the Exchange contract to transfer the TIX and the second transaction accepts the resale offer.
 
-\subsubsection{Identity smart contract}
+The reason why it is necessary to make two transactions is due to how the ERC721 and ERC20 standards work. As we mention above, to transfer an asset, you must either be the owner or have received the approval of its owner.
 
-\subsubsection{TIX smart contract}
+In order to fix this limitation, our first approach was to have the TIX contract and the Ticketing contract white list the address of the Exchange smart contract so that it does not need to be given prior approval. However, this approach is not a good idea because it blurs the line between the different smart contracts and their role. It opposes the blockchain philosophy which says that the end user must be the sole owner of these goods. Additionally, if the Exchange contract has a security hole, an attacker could potentially steal TIX. The principle of least privilege is not respected with this approach.
 
-\subsubsection{Ticketing smart contract}
-TODO: add proof to authorize TIX transfer in order to pay the event registration fee and the minting fee
+Eventually, we came up with the solution we explain previously, the externally approved transfer of assets. The idea take a bit of time to maturate and we explain in the following paragraph how we came up with the idea. We first figure it out that a transaction is in fact simply an operation signed by a user that change the state of the blockchain. However, it is not mandatory that the user himself is the initiator of this state change as long as the one doing the operation is approved by the user. Therefore, the idea is to use cryptography so that spectators can create off-chain evidence that authorizes the Exchange contract to transfer TIXs and tickets on their behalf. To do that, we modify the ERC721 and ERC20 standards so that it accepts the new type of approval we describe previously. Note that with this approach there is nothing new to build. We can construct proofs in the same way as those created by oracles. And the proof checking mechanism that is used to check proofs from oracles can be integrated into both standards to support this new type of approval. As with this approach it is no longer necessary to give the approval to transfer the TIX and the tickets, we halve the number of transactions to be made to carry out a resale.
 
-\subsubsection{Exchange smart contract}
+We go even further in the process by needing to make a single transaction to make a resale. With the current design, when a viewer resells a ticket, they first ask the oracle to create proof of resale approval. Once he has this proof, he lists his ticket on the Exchange smart contract by creating a resale offer. However, it is not necessary to list the offer directly on the smart contract. This can be done off-chain in order to save a transaction. To do this, the seller must create a proof of resale authorization in the same way as the Approver oracle. This proof can then be used by a buyer to redeem the tickets.
 
-You can find the flow diagram of the resaleV2 in the figure \hyperref[fig:resaleV2]{ \textit{ResaleV2}}.
+If we combine the two approaches, we offer the possibility of reselling a ticket by making a single transaction. Here is a high level description of the flow. The seller asks the oracle to create proof of resale approval. The seller creates two proofs. Proof of Resale Approval that authorizes a buyer to purchase their ticket and Proof of Transfer Approval that authorizes the Exchange Contract to transfer the ticket on their behalf. The buyer creates proof of transfer approval that authorizes the Exchange contract to transfer the TIX on their behalf. Finally, the seller creates a redemption transaction for the ticket that contains the four proofs and sends it to the blockchain. The smart contract checks that all authorizations are valid and executes the redemption operation. You can find the flow diagram of the resaleV2 in the figure \hyperref[fig:resaleV2]{\ref{fig:resaleV2}}.
 
 \begin{figure}[h!]
   \includegraphics[width=\textwidth]{resaleV2.png}
@@ -377,7 +372,9 @@ You can find the flow diagram of the resaleV2 in the figure \hyperref[fig:resale
   \label{fig:resaleV2}
 \end{figure}
 
-You can find the flow diagram of the swapV2 in the figure \hyperref[fig:swapV2]{ \textit{SwapV2}}.
+TODO: explain how and why we change the swap logic
+
+You can find the flow diagram of the swapV2 in the figure \hyperref[fig:swapV2]{ \ref{fig:swapV2}}.
 
 \begin{figure}[h!] 
   \centering
@@ -385,6 +382,47 @@ You can find the flow diagram of the swapV2 in the figure \hyperref[fig:swapV2]{
   \caption{SwapV2}
   \label{fig:swapV2}
 \end{figure}
+
+To go even further in the process, we could also aggregate the proofs into one in order to reduce the complexity of the verification of the proofs on the smart contract and therefore the transaction execution costs. For instance the approval proofs of the user and the Approver can be aggregated because they are both checked by the Exchange contract. The three TIX transfer approval can also be aggregate such that the TIX contract only need to verify a single proof. Of course, the TIX contract must also support batch of transfer. Finally, note that we need to construct proofs that have homomorphic properties in order to aggregate proofs.
+
+TODO: COMPARAISON DES DEUX APPROCHES: la première (si on enleve l'oracle) permet de créer une place de marché non régulé mais entièrement decentralisé, la deuxième permet de créer une place de marché réguler et plus pratique mais pas totalement decentralisé (cela peut être le cas avec des oracles decentralisés)
+La business logique on-chain est aussi beaucoup plus simple
+Le swap est modifié car il ne faisait pas sens. Le swap doit être peer to peer uniquement.
+
+TODO: clarify that the optional buyer is used for P2P resale and a resale with an empty optional buyer is meant to be listed on the marketplace
+
+TODO: explain how to enable off-chain payment with strip and signature
+
+TODO: explain it prevents someone to create a resale and then remove the approval on the token so that the transaction fails.
+
+TODO: conclure en disant que l'approche V1 et l'approche V2 sont deux exemples et qu'il y a plein d'autre approche possible en terme de flow, custodialité et decentralisation. 
+
+\section{Graph node}
+The graph node runs the graph protocol and allows us to make complex data queries that would be very difficult to do directly on the blockchain.
+
+Let's start by understanding why it is difficult to do complex queries on the blockchain. There are two major limitations. The first is the gas limit. Like transactions, calls cannot have a complexity exceeding a certain limit. If the size of the returned data is too large, the call fails. However, this limitation is easily overcome if the data is simple. All you have to do is split a large query into several sub-queries. For example, if we want to obtain the balance of all the accounts of an ERC20 contract, we can query the first 100 balances in a first request, then the following 100 in a second request and so on. This requires two data structures on the smart contract, a list and a hashmap. The list stores users' balances and the hashmap maps a user's address to their balance's position in the list. This approach makes it possible to update a user's balance because the position of his balance is tracked by the hashmap and it is also possible to return all the balances by iterating over the list.
+
+With this approach, it is also possible to easily create simple filters. Let's go back to the previous example and assume that the smart contract stores two additional hashmaps. The first hashmap tracks premium accounts and the second hashmap tracks VIP accounts. If we want to get the balance of all premium and VIP accounts, we can simply iterate over the list of accounts and return only the accounts tracked by one of the two hashmaps.
+
+However, this approach is very limited because it is not possible to create queries as complex and rich as SQL would allow. There is not built-in primitive such as merge, join or filter to manipulate data. Therefore, if one wants to implement a complex query on a smart contract, he needs to implement by himself all these primitives. The code of the function would be very complicated to write and the request would fail as soon as the number of data becomes too large because the maximum gas limit would be reached.
+
+The graph overcomes this limitation by creating an index outside the blockchain. The index is built through event emitted by transactions and can be queried through graphql \footnote{https://graphql.org/} queries.
+
+Here is an overview of how the indexing works. Let's use again the ERC20 contract storing the balance of users as an example. When a user transfers tokens to another user, he first creates a transaction with the following fields: his address, the recipient's address and the amount he wants to transfer. The user sends the transaction to the blockchain which executes it. When the transaction is mined an event containing the three preceding fields is emitted and logged. The graph node listens to this event and updates its index by decrementing the sender's balance and incrementing the receiver's balance. You can find an overview of the flow in the figure \hyperref[fig:graph_node]{\ref{fig:graph_node}}.
+
+\begin{figure}[h!] 
+  \centering
+  \includegraphics[scale=0.7]{graph_node.png}
+  \caption{Graph node}
+  \label{fig:graph_node}
+\end{figure}
+
+Now that we understand why it is difficult to make complex queries or obtain bulk data, let's look at its use in our system. The graph node maintains three indexes. The first stores all user information, i.e. address, group, balance in TIX, TIX allowance to Ticketing contract, TIX allowance to Exchange contract (only for the spectator). The second stores all event information, i.e. event ID, organizer, name, location, opening date and time, closing date and time, state, number of tickets. The third stores all ticket information, i.e. token ID, ticket ID, event ID, owner, state, status (on swap / on resale). To build and maintain these three indexes, the graph node listens to events sent by the four smart contracts. The list of events can be found in the \hyperref[sec:appendix_a]{Appendix A}.
+
+\section{Database}
+The database has three uses. It stores the data of the organizers and the spectators, i.e. the name, the first name, the address of residence, the email address and the Ethereum address. It stores the transfer and resale rules as well as the data necessary for their application. Finally, it stores the indexes created by the graph protocol.
+
+TODO: graph node, marketplace, identifier, approver
 
 %%%%%%%%%%%%%%%%
 \chapter{Security}
@@ -444,17 +482,21 @@ Describe the evaluation setup, the designed experiments, and how the
 experiments showcase the individual points you want to prove.
 This section is usually 5-10 pages.} \\
 
-\section{Experimental setup}
-Dell latitude 
-proc: i7-9850H
-ram: 16GB
+\section{Comparison with similar approaches}
+TODO: explain that our approach is better than using a fact registry contract because we our approach we do not store the proof on chain and so reduce the amount of data written on chain (but increase the calldata size)
 
+TODO: explain that our approach is better than metatransaction because it is way simpler to implement and not centralized. Therefore more secure and without single point of failure
 
 \section{Performance}
 
-\subsection{Transactions}
+\subsection{Experimental setup}
+Dell latitude 
+proc: i7-9850H
+ram: 16GB
+in WSL 2
+in a single core
 
-\subsubsection{Latency and throughput}
+\subsection{Latency and throughput}
 It does not make really sense to measure the latency because it depends on several factor: validation time of the blockchain, congestion of the network etc,
 
 
@@ -465,93 +507,119 @@ Then based on the result try to estimate the latency and througput on ethereum e
 estimation sur polygon
 estimation sur ethereum
 
-\subsubsection{Max batch size}
-Sur Ethereum avec une erreur de +- 10 
+\subsection{Max batch size}
+In the table \hyperref[table:max_batch_size]{\ref{table:max_batch_size}} you can find the maximum batch size supported by the Ticketing contract on mint, burn and update operations on tickets. These are the maximum size of a batch before the operation is reverted because the gas limit is reached. Note that we could use compression tricks and we could also optimize the contract code in order to increase theses max batch sizes.
 
-Maximum mint batch size = 300 
-
-Maximum burn batch size = 970
-
-Maximum update state size = 410
+\begin{table}[h!]
+\begin{center}
+\begin{tabular}{ |c|c|c| }
+ \hline
+ Max mint batch size & Max burn batch size & Max update batch size \\
+ \hline
+ 300 \pm 10 & 970 \pm 10 & 410 \pm 10 \\
+ \hline
+\end{tabular}
+\caption{Max batch size per operation}
+\label{table:max_batch_size}
+\end{center}
+\end{table}
 
 \subsection{Signatures (Oracles)}
+In the table \hyperref[table:signatures]{\ref{table:signatures}} you can see the time it takes to compute the hash, the signature and the hash + the signature of batches of different sizes. The time is in seconds and in parenthesis is the average time of a single operation.
 
-\subsubsection{stat}
-cpu consumption
-memory consumption
-time amount
+\begin{table}[h!]
+\begin{center}
+\begin{NiceTabular}{ |c||c|c|c| }
+ \hline
+ Batch size & Hashing & Signing & Hashing + Signing \\
+ \hline \hline
+ 1'000   & 0.2164 (0.0002) & 0.3566 (0.0004) & 0.5779 (0.0006) \\
+ 10'000 & 1.563 (0.0002) & 2.968 (0.0003) & 4.956 (0.0005) \\
+ 100'000 & 14.59 (0.0001) & 26.18 (0.0003) & 50.37 (0.0005) \\
+ 1'000'000 & 147.1 (0.0001) & 256.7 (0.0003) & 509.9 (0.0005) \\
+ \hline
+\end{NiceTabular}
+\caption{Signatures}
+\label{table:signatures}
+\end{center}
+\end{table}
 
-
-
-faire les mesures pour 1000 - 10000 - 100000 - 1000000 -10000000
-
-
-
-Time to compute 100000 hashes: 15660.014899998903 milliseconds
-
-Average time to compute a single hashe: 0.15660014899998903 milliseconds
-
-Time to compute 100000 signatures: 28457.437199998647 milliseconds
-
-Average time to compute a single signature: 0.2845743719999865 milliseconds
-
-Time to compute 100000 hashes + signatures: 52324.1595999971 milliseconds
-
-Average time to compute a single hash + signature: 0.523241595999971 milliseconds
-
-\subsection{Calls (GraphQL)}
-
-\subsection{Database size}
+The result highlights that the creation of the proofs is not time and resource consuming at all. Note that the verification of the rules and the network latency are not taken into account in the measurement therefore we should expect that the operation take slightly more time to execute. However also not that these tests have been made on a single core of a laptop which is not the hardware that would be use in production. So we can conclude that the oracles can easily sustain more than 1500 proof generations per second which is perfectly enough for our purpose.
 
 \section{Costs}
-General costs (Measured done the 01.02.2022):
+Measure done the 21.02.2022 with the compiler version 0.8.12 with the optimizer enable and set to 200.
 
-\includegraphics[width=\textwidth]{marketplace_price_ethereum_01_02_2022.PNG}
+\begin{table}[h!]
+\begin{center}
+\begin{NiceTabular}{ |c||c|c|c| }
+ \hline
+ Contract & Avg gas (Gwei) & Avg cost in Ethereum (CHF) & Avg cost in Ethereum (CHF) \\
+ \hline \hline
+ Identity & 763'699 & 126.70 & 0.03 \\
+ TIX & 1'447'729 & 240.18 & 0.06 \\
+ Ticketing & 3'873'386 & 642.59 & 0.16 \\
+ ExchangeV1 & 2'179'969 & 361.66 & 0.09 \\
+ ExchangeV2 & 1'255'857 & 208.35 & 0.05 \\
+ \hline
+\end{NiceTabular}
+\caption{Contracts deployment price on Ethereum and Polygon}
+\label{table:contracts_deployment_price}
+\end{center}
+\end{table}
 
-\includegraphics[width=\textwidth]{marketplace_price_polygon_01_02_2022.PNG}
+\begin{table}[h!]
+\begin{center}
+\begin{NiceTabular}{ |c||c|c|c| }
+ \hline
+ Operation & Avg gas (Gwei) & Avg cost in Ethereum (CHF) & Avg cost in Ethereum (CHF) \\
+ \hline \hline
+ Register & 54'663 & 9.07 & < 0.01 \\
+ Unregister & 27'781 & 4.61 & < 0.01 \\
+ Revoke & 30'582 & 5.07 & < 0.01 \\
+ \hline
+\end{NiceTabular}
+\caption{Identity contract operations cost}
+\label{table:identity_contract_operations_cost}
+\end{center}
+\end{table}
 
-\includegraphics[width=\textwidth]{marketplace_price_avalanche_01_02_2022.PNG}
 
-\includegraphics[width=\textwidth]{marketplace_price_binance_01_02_2022.PNG}
 
-Additional costs induced by the signature (Measured done the 01.02.2022):
+\begin{center}
+\begin{figure}[h!] 
+  \includegraphics[width=\textwidth]{transactions_price_ethereum_21_02_2022.PNG}
+  \caption{Transaction price on Ethereum the 21.02.2022}
+  \label{fig:transactions_price_ethereum_21_02_2022}
+\end{figure}
+\end{center}
 
-\includegraphics[width=\textwidth]{identity_sig_price_overhead_ethereum_01_02_2022.PNG}
+\begin{center}
+\begin{figure}[h!] 
+  \includegraphics[width=\textwidth]{transactions_price_polygon_21_02_2022.PNG}
+  \caption{Transaction price on Ethereum the 21.02.2022}
+  \label{fig:transactions_price_polygon_21_02_2022}
+\end{figure}
+\end{center}
 
-\includegraphics[width=\textwidth]{exchange_sig_price_overhead_ethereum_01_02_2022.PNG}
+\begin{center}
+\begin{figure}[h!] 
+  \includegraphics[width=\textwidth]{transactions_price_avalanche_21_02_2022.PNG}
+  \caption{Transaction price on Ethereum the 21.02.2022}
+  \label{fig:transactions_price_avalanche_21_02_2022}
+\end{figure}
+\end{center}
+
+\begin{center}
+\begin{figure}[h!] 
+  \includegraphics[width=\textwidth]{transactions_price_binance_21_02_2022.PNG}
+  \caption{Transaction price on Ethereum the 21.02.2022}
+  \label{fig:transactions_price_binance_21_02_2022}
+\end{figure}
+\end{center}
 
 %%%%%%%%%%%%%%%%%%%%%%
 \chapter{Limitation and future work}
 %%%%%%%%%%%%%%%%%%%%%%
-
-\section{Design optimization}
-Although the implementation shows that the design works, there is one point that is not satisfactory. When a spectator creates a resale offer, he must make two transactions. The first transaction authorizes the exchange contract to transfer the spectator's ticket. The second transaction creates the resale offer. The spectator who buys the ticket in resale must also make two transactions. The first gives the authorization to the Exchange contract to transfer the TIX and the second transaction accepts the resale offer.
-
-The reason why it is necessary to make two transactions is linked to the operation of the ERC721 and ERC20 standard. To transfer an asset, you must either be the owner or have received the approval of its owner. Once the transfer is complete, the approval is withdrawn.
-
-One solution to this problem would be to have the TIX contract and the Ticketing contract white list the address of the Exchange smart contract so that it does not need to be given prior approval.
-However, this approach is not a good idea because it blurs the line between the different smart contracts and their role. It opposes the blockchain philosophy which says that the end user must be the sole owner of these goods. Additionally, if the Exchange contract has a security hole, an attacker could potentially steal TIX. The principle of least privilege is not respected with this approach.
-
-Here we propose an approach that might work. The idea is to use cryptography so that spectators can create off-chain evidence that authorizes the Exchange contract to transfer TIXs and tickets on their behalf. We also need to modify the ERC721 and ERC20 standards so that it accepts this new type of approval. Note that there is nothing new to build. We can construct proofs in the same way as those created by oracles. And the proof checking mechanism that is used to check proofs from oracles can be integrated into both standards to support this new type of approval. As with this approach it is no longer necessary to give the approval to transfer the TIX and the tickets, we halve the number of transactions to be made to carry out a resale.
-
-We can go even further in the process by needing to make a single transaction to make a resale. With the current design, when a viewer resells a ticket, they first ask the oracle to create proof of resale approval. Once he has this proof, he lists his ticket on the Exchange smart contract by creating a resale offer. However, it is not necessary to list the offer directly on the smart contract. This can be done off-chain in order to save a transaction. To do this, the seller must create a proof of resale authorization in the same way as the Approver oracle. This proof can then be used by a buyer to redeem the tickets.
-
-If we combine the two approaches, we offer the possibility of reselling a ticket by making a single transaction. Here is a high level description of the flow. The seller asks the oracle to create proof of resale approval. The seller creates two proofs. Proof of Resale Approval that authorizes a buyer to purchase their ticket and Proof of Transfer Approval that authorizes the Exchange Contract to transfer the ticket on their behalf. The buyer creates proof of transfer approval that authorizes the Exchange contract to transfer the TIX on their behalf. Finally, the seller creates a redemption transaction for the ticket that contains the four proofs and sends it to the blockchain. The smart contract checks that all authorizations are valid and executes the redemption operation.
-
-To go even further in the process, we could also aggregate the proofs into one in order to reduce the complexity of the verification of the proofs on the smart contract and therefore the transaction execution costs. To do this, we need to construct proofs that have homomorphic properties.
-
-
-TODO: COMPARAISON DES DEUX APPROCHES: la première (si on enleve l'oracle) permet de créer une place de marché non régulé mais entièrement decentralisé, la deuxième permet de créer une place de marché réguler et plus pratique mais pas totalement decentralisé (cela peut être le cas avec des oracles decentralisés)
-La business logique on-chain est aussi beaucoup plus simple
-Le swap est modifié car il ne faisait pas sens. Le swap doit être peer to peer uniquement.
-
-TODO: clarify that the optional buyer is used for P2P resale and a resale with an empty optional buyer is meant to be listed on the marketplace
-
-TODO: explain how to enable off-chain payment with strip and signature
-
-TODO: explain it prevents someone to create a resale and then remove the approval on the token so that the transaction fails.
-
-TODO: conclure en disant que l'approche V1 et l'approche V2 sont deux exemples et qu'il y a plein d'autre approche possible en terme de flow, custodialité et decentralisation. 
 
 \section{Time-based proof expiration}
 TODO
@@ -579,11 +647,15 @@ The zk rollups, which in my opinion are the future of blockchain scalability, ar
 \section{TIX token features}
 For the moment, the TIX token has very little use and it could perfectly be replaced by ETH. Here are some ideas that might make it more useful.
 
+TODO: use an AMM to buy TIX instead of the custom made approach
+
 The TIX could be used as a governance token so that users can vote for new features in the application. For example, it would be possible to make a vote to determine if the spectators would like to have the possibility of claiming the souvenir ticket of an event in the form of NFT. The governance could also let the organizers vote for the next features they would like the development team to implement first.
 
 It would also be possible to create a reward pool that can be shared regularly between the most acidus users of the application or to people who discover security flaws in the system. The pool could be filled by taking a small commission on each resale of tickets.
 
 TODO: instead of a token we can also emit a tokenized security with the help of Taurus
+
+TODO: explain how we can use the proof to enable external payment, for instance with STRIP
 
 TODO: exchange with liquidity to buy back tickets in exchange of TIX. This could be a good incentive to fight black market and side channel payment.
 

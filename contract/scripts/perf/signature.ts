@@ -11,7 +11,7 @@ async function main() {
   const signers = await ethers.getSigners();
   const identifier = signers[0];
   const spectator = signers[1];
-  const batchSize = 10000;
+  const batchSize = 1000000;
   
   // single hash
   let startTime = performance.now();

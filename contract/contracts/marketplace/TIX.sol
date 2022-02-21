@@ -103,6 +103,9 @@ contract TIX is Context, Ownable, ERC20, ITIX {
         uint256 amount,
         bytes memory signature
     ) public override {        
+
+        //TODO: add the Exchange contract in the proof, get the sender address and check the proof
+
         // check signature
         bytes32 hash = keccak256(abi.encode(from, to, amount));
         (address recovered, ECDSA.RecoverError error) = ECDSA.tryRecover(
