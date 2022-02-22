@@ -86,43 +86,45 @@ async function main() {
   let ticketIds: BigNumberish[];
   let owners: any[];
   
-  // // max mint batch
-  // console.log("Start searching max mint batch size");
-  // for(let i = 100; i < maxBatchSize; i += 10) {
-  //   ticketIds = Array(i - 1 + 1)
-  //     .fill(0)
-  //     .map((_, idx) => 1 + idx);
-  //   owners = Array(i).fill(spectator.address);
-  //   await ticketing.mintBatch(1, ticketIds, owners);
-  //   console.log(`Mint batch size of ${i} supported`)
-  // }
-
-  // // max batch burn
-  // console.log("Start searching max burn batch size");
-  // let index = 0
-  // for(let i = 900; i < maxBatchSize; i = i + 10) {
-  //   ticketIds = Array(i)
-  //     .fill(0)
-  //     .map((_, idx) => 1 + idx + index);
-  //   index += i;
-  //   owners = Array(i).fill(spectator.address);
-  //   for(let j = 0; j < i; j += 300) {
-  //     let k = 0;
-  //     let l = 0;
-  //     if (i - j < 300) {
-  //       k = i;
-  //       l = i - j;
-  //     } else {
-  //       k = j + 300
-  //       l = 300
-  //     }
-  //     await ticketing.mintBatch(1, ticketIds.slice(j, k), owners.slice(0, l));
-  //   }
-  //   await ticketing.burnBatch(ticketIds);
-  //   console.log(`Burn batch size of ${i} supported`)
-  // }
+  // max mint batch
+  console.log("Start searching max mint batch size");
+  for(let i = 250; i < maxBatchSize; i += 10) {
+    ticketIds = Array(i - 1 + 1)
+      .fill(0)
+      .map((_, idx) => 1 + idx);
+    owners = Array(i).fill(spectator.address);
+    console.log(`Try batch of size ${i}`)
+    await ticketing.mintBatch(1, ticketIds, owners);
+    console.log(`Mint batch size of ${i} supported`)
+  }
 
   // max batch burn
+  console.log("Start searching max burn batch size");
+  let index = 0
+  for(let i = 900; i < maxBatchSize; i = i + 10) {
+    ticketIds = Array(i)
+      .fill(0)
+      .map((_, idx) => 1 + idx + index);
+    index += i;
+    owners = Array(i).fill(spectator.address);
+    for(let j = 0; j < i; j += 300) {
+      let k = 0;
+      let l = 0;
+      if (i - j < 300) {
+        k = i;
+        l = i - j;
+      } else {
+        k = j + 300
+        l = 300
+      }
+      await ticketing.mintBatch(1, ticketIds.slice(j, k), owners.slice(0, l));
+    }
+    console.log(`Try batch of size ${i}`)
+    await ticketing.burnBatch(ticketIds);
+    console.log(`Burn batch size of ${i} supported`)
+  }
+
+  // max batch token update
   console.log("Start searching max update state batch size");
   let index = 0
   let states: any[];
@@ -145,6 +147,7 @@ async function main() {
       }
       await ticketing.mintBatch(1, ticketIds.slice(j, k), owners.slice(0, l));
     }
+    console.log(`Try batch of size ${i}`)
     await ticketing.updateTokenStateBatch(ticketIds, states);
     console.log(`Update state batch size of ${i} supported`)
   }
