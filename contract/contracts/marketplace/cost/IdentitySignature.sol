@@ -47,17 +47,13 @@ contract IdentitySignature is Context, Ownable {
     */
     function registerWithProof(
         bytes32 group,
-        bytes32 hash,
         bytes memory signature
     ) external {
         require(!isRegistered(_msgSender()), "The user already exists");
         require(_isValidGroup(group), "The group is not valid");
 
-        // check hash
-        require(
-            hash == keccak256(abi.encode(_msgSender(), group)),
-            "The hash is not valid"
-        );
+        // create hash
+        bytes32 hash = keccak256(abi.encode(_msgSender(), group));
 
         // check signature
         (address recovered, ECDSA.RecoverError error) = ECDSA.tryRecover(

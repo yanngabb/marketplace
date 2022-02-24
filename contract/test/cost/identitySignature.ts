@@ -39,7 +39,7 @@ describe("IdentitySignature", function () {
       )
     );
     const signature = await identifier.signMessage(ethers.utils.arrayify(hash));
-    await spectatorIdentitySignature.registerWithProof(group, hash, signature);
+    await spectatorIdentitySignature.registerWithProof(group, signature);
     expect(await identitySignature.isRegistered(spectator.address)).to.equal(true);
   });
 

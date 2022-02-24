@@ -170,7 +170,6 @@ describe("ExchangeSignature", function () {
       1,
       PRICE,
       spectator2.address,
-      hash,
       signature
     );
   });

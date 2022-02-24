@@ -85,7 +85,6 @@ contract ExchangeSignature is Context, Ownable {
         uint256 tokenId,
         uint256 price,
         address optionalBuyer,
-        bytes32 hash,
         bytes memory signature
     ) external {
         // check input
@@ -109,11 +108,8 @@ contract ExchangeSignature is Context, Ownable {
             );
         }
 
-        // check hash
-        require(
-            hash == keccak256(abi.encode(_msgSender(), tokenId, price, optionalBuyer)),
-            "The hash is not valid"
-        );
+        // create hash
+        bytes32 hash = keccak256(abi.encode(_msgSender(), tokenId, price, optionalBuyer));
 
         // check signature
         (address recovered, ECDSA.RecoverError error) = ECDSA.tryRecover(

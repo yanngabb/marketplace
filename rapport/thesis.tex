@@ -417,18 +417,20 @@ We have chosen a non-custodial design, i.e. the keys of the Ethereum wallets are
 \subsection{Tamper-proof inputs}
 As we mentioned earlier, as much of the business logic as possible is on the blockchain so that it inherits its security. However, we need to use oracles to execute business logic and manipulate data that cannot be on the blockchain. In addition, spectators must create proofs of approval for certain operations. The approach we propose ensures the authenticity and integrity of the data sent on the blockchain because it relies on cryptography. Therefore, as long as the oracles and users are not compromised, all data entering the blockchain is secure, i.e. its integrity and authenticity are guaranteed.
 
-\subsection{Proof}
+\subsection{Proof-based approval}
 In the previous section, we explained that many operations used off-chain approval proofs to minimize the number of transactions required to complete it. We now need to show that this approach is indeed secure. We remind you that there are two types of proof: transaction approval proof and asset transfer approval proof. Some operations only require one approval proof, while others require several. In this analysis, we assume that smart contracts do not have security flaws that would allow the verification of a proof to be bypassed. Therefore, for a transaction to succeed, it is necessary that all the proofs are gathered and that they are all valid otherwise the transaction fails. Moreover, since all operations are atomic, the slightest failure of verification implies the complete rollback of the transaction. Therefore, either the transaction is successful as a whole and the changes are written to the blockchain or nothing is changed on the blockchain.
 
 Let's start with the asset transfer approval proof used when registering a new event and minting new tokens. This proof authorizes the Ticketing contract to transfer TIX on behalf of the organiser. Someone with bad intentions will seek to use this evidence to steal the organizer's TIX. To do this, he will try to modify the proof in order to change the recipient of the funds. In this case, he wants to replace the address of NFTiX with his own. However this is not possible because the new message will not match the message with which the signature was created and therefore the proof verification will fail. The only possible approach is to find a destination address that produces the same message as with the NFTix address. However, Keccak265 is second pre-image resistant. It is therefore in theory impossible to find an address different from that of NFTiX which will produce the same message. NFTiX may also seek to modify this proof in order to receive more TIX from the organizer. However, this is not possible for the same reasons explained above. Moreover, NFTiX has no reason to do this because it would alienate the organizer and get very bad publicity 
 
 Now let's look at the resale that uses six proofs. There are the Approver's resale approval proof, the seller's resale approval proof, the seller's ticket transfer approval proof, and the three buyer's TIX transfer approval proofs. As explained previously, it is not possible to exploit the TIX transfer approval proof in order to steal the TIX of the buyer. For the same reasons, the same goes for the ticket transfer approval proof. There are three other possible attacks. The first is to try to make an illegal resale that has not been approved by the Approver. To do this, the attacker must successfully forge the signature of the Approver in order to create a fake resale approval proof. This is not possible because the attacker does not know the private key of the Approver. The second attack is to try to resell without the consent of the ticket owner. This is also not possible as the attacker does not have access to the ticket owner's private key and therefore he cannot create a fake resale approval proof and ticket transfer approval proof. The third potential attack is to carry out a partial resale such as the buyer receives the ticket but does not give the TIX in exchange or the seller receives the TIX but does not give the ticket in exchange. This attack cannot work because the transactions are atomic. Finally, note that the same analysis is valid for the swap. We do not give it here so as not to unnecessarily lengthen this section.
 
-TODO: our approach have no replay mechanism but that is fine
+To conclude our analysis, we will show that it is not possible to reuse old proofs to mount a replay attack and that it is also not possible to use a TIX transfer approval proof created by a third party to steal funds from him.
 
-To conclude, we are going to show that it is not possible to mount a replay attack and that it is also not possible to use an old proof of transfer from TIX with a higher amount than that proposed in order to to extort the buyer. You have certainly noticed that there is no mechanism preventing you from reusing the same evidence in order to mount a replay attack. The reason for this, is that it is actually not necessary to have one. In effect,
+You have certainly noticed that no mechanism prevents reusing the same evidence to mount a replay attack. The reason is that there is actually no need to have one because replay can only fail. Indeed, as the state is no longer the same, the checks performed by the smart contracts fail and so the transaction is reverted. Take for example the case of resale. First, a seller makes a resale offer which is accepted by a buyer. The ticket is transferred to the buyer and the TIXs are transferred to the seller. Now imagine that the seller tries to steal TIX by replaying the resale with the proofs that have been generated beforehand. The resale replay fails because the verification of the ticket owner performed by the smart contract fails. Indeed, the seller is no longer the owner of the ticket. Therefore, replay attacks do not work with our approach. Note that the same is true for swap too.
 
-Using an old proof of TIX transfer is also not possible
+Now let's look at the second attack. This attack is not possible because the smart contracts check that the proofs are valid but they also check that the transaction corresponds to the proof. Let's illustrate this with an example. Assume that a resale has taken place between a buyer and a seller, let's call them Alice and Bob. Now imagine that Alice resells a second ticket at the same price to another buyer, let's call her Clara. Clara tries to use the proof of transfer of TIX from the old resale in order to make a resale transaction while keeping her TIXs. This attack is not possible for two reasons. First, the verification of the proof fails because it was not signed by Clara but by Bob. Second, the Exchange contract verifies that the funds are indeed transferred from the buyer to the seller, in this case from Clara to Alice, which is not the case. Therefore, it is not possible to mount this kind of attack.
+
+To conclude, the key point to understand is that once a transaction has been made, the state of the system no longer matches the proofs. Therefore, although proofs do not contain a mechanism to prevent their reuse, it is not possible to use them for dishonest purposes.
 
 \section{Threat model}
 The design we propose is based on several assumptions. The first assumption is that the organizers and the operators of NFTiX are not malicious. Indeed, organizers have the ability to delete tickets arbitrarily and system operators can revoke a user at will. Nothing prevents them from doing this kind of actions. However, we assume that this assumption is reasonable as it is unlikely that they will commit such actions. Indeed, they have more to lose than to gain. Their reputation and the trust in the system would be damaged and this would have a direct impact on their income.
@@ -460,17 +462,9 @@ experiments showcase the individual points you want to prove.
 This section is usually 5-10 pages.} \\
 
 \section{Proof vs fact registry contract}
-Same goal different approach
+We want to provide a quick comparison of our proof-base approval approach with another approach that more or less addresses the same problem. This approach is to use a smart contract to store facts \footnote{https://docs.starkware.co/starkex-v4/starkex-deep-dive/smart-contracts-1/fact-registry}. This approach is more generic than ours because a fact is not limited to external approval. It can be anything like for example the price of a token against another one at a given time. This is very practical for building for example an AMM. Another interesting point is that a fact can be signed by several parties. This could be very practical for NFTiX because in the context of a resale, we could for example have a single fact signed by the seller, the buyer and the Approver instead of having six proofs. This approach also makes it possible to clearly separate the business logic and the external approval logic because the fact verification code is only on the fact registry contract and not on all the smart contracts as in our case.
 
-gas consumption: higher computation complexity vs writing data on chain
-security: same, in both case oracle and crypto are used
-granularity: a proof per approbation need vs a fact for a bunch of approbation if multi-signed
-complexity: simpler to implement + not generic + local vs require a dedicated smart contract + more richness + global
-
-
-
-
-TODO: explain that our approach is better than using a fact registry contract because we our approach we do not store the proof on chain and so reduce the amount of data written on chain (but increase the calldata size)
+However, we decided not to use this approach for several reasons. The first is that our approach is less gas-intensive because we only check the proofs but do not write anything to the blockchain. It is sometimes useful to have persistence but in our case it is not necessary. The second reason is that a fact registry contract might be a single point of failure. If there is a vulnerability in it our external approval system might be fully compromised whereas by distributing the work across several different contracts we reduce the risk in the event of a vulnerability in a contract. Finally, the main reason for our choice is that with our approach we can have transactions which are atomic as a whole and which do not require to make transactions of preparation beforehand. We believe this is a real advantage because by reducing the number of steps needed to complete an action, it greatly reduces the attack surface and the complexity of the system while ensuring an equivalent level of security.
 
 \section{Performance}
 
@@ -478,21 +472,16 @@ TODO: explain that our approach is better than using a fact registry contract be
 The tests were performed on a Dell latitude 5501 laptop with an i7-9850H processor and 16GB of RAM in the WSL2 environment.
 
 \subsection{Throughput and latency}
+We cannot give an exact measurement of the throughput and latency on the blockchain because it would cost a lot of gas, even on a testnet. Therefore, we give estimates based on statistics.
 
+Ethereum operates at a rate of around 15 TPS and has a block confirmation time of around 15 seconds. This is clearly insufficient to support NFTiX. Indeed, even by paying the maximum gas fee so that the transactions are integrated in the next block, the transaction confirmation time is a little too long. Users don't want to wait 15 seconds for their transaction to complete. Moreover, there is another problem. We can reasonably estimate that NFTiX must support at max around 10,000 transactions daily. It represents the minting of 3'000'000 new tokens with batch of size 300 or 10'000 resales. Ethereum has a daily volume of around 1,300,000 transactions. Which means that NFTiX alone would use about 0.8\% of the network which is way to much. Clearly, Ethereum cannot support NFTiX at this time.
 
-It does not make really sense to measure the latency because it depends on several factor: validation time of the blockchain, congestion of the network etc,
+Polygon with around 100 TPS and a block confirmation time of around 2 seconds is a better candidate. A potential transaction confirmation time of around 2 seconds is perfectly acceptable. Moreover, using the same assumptions as before, we obtain a use of around 0.1\% of the network. Solana is another interesting candidate. It has a TPS of around 2400 and a block confirmation time of around 0.8 seconds. NFTiX would use about 0.004\% of the network which is perfectly fine.
 
-TOOD: hard to do but we can provide estimate
-
-make a few scenario and show which part take the most time to execute (signature?, transaction mining?)
-
-
-Then based on the result try to estimate the latency and througput on ethereum et polygon
-estimation sur polygon
-estimation sur ethereum
+So, the estimation show that it could be possible at the moment to deploy NFTiX on Polygon or on Solana. However, as more and more projects are deployed on these networks, there is an high chance that in the future they will suffer from the same congestion as Ethereum does. However, rollups seems very promising and would certainly solve this scalability problem.
 
 \subsection{Max batch size}
-In the table \hyperref[table:max_batch_size]{\ref{table:max_batch_size}} you can find the maximum batch size supported by the Ticketing contract on mint, burn and update operations on tickets. These are the maximum size of a batch before the operation is reverted because the gas limit is reached. Note that we could use compression tricks and we could also optimize the contract code in order to increase theses max batch sizes.
+In the table \hyperref[table:max_batch_size]{\ref{table:max_batch_size}} you can find the maximum batch size supported by the Ticketing contract on mint, burn and update operations on tickets. These are the maximum size of a batch before the operation is reverted because the gas limit is reached. Note that we could use compression tricks and we could also optimize the contract code in order to increase theses max batch sizes but we consider these numbers sufficiently good for a POC.
 
 \begin{table}[h!]
 \begin{center}
@@ -509,7 +498,7 @@ In the table \hyperref[table:max_batch_size]{\ref{table:max_batch_size}} you can
 \end{table}
 
 \subsection{Proof generation}
-In the table \hyperref[table:signatures]{\ref{table:signatures}} you can see the time it takes to compute the hash, the signature and the hash + the signature of batches of different sizes. The time is in seconds and in parenthesis is the average time of a single operation.
+In the table \hyperref[table:signatures]{\ref{table:signatures}} you can see the time it takes to compute the hash, the signature and the hash + the signature of request batch of different sizes. The time is in seconds and in parenthesis is the average time of a single operation.
 
 \begin{table}[h!]
 \begin{center}
@@ -528,12 +517,14 @@ In the table \hyperref[table:signatures]{\ref{table:signatures}} you can see the
 \end{center}
 \end{table}
 
-The result highlights that the creation of the proofs is not time and resource consuming at all. Note that the verification of the rules and the network latency are not taken into account in the measurement therefore we should expect that the operation take slightly more time to execute. However also not that these tests have been made on a single core of a laptop which is not the hardware that would be use in production. So we can conclude that the oracles can easily sustain more than 1500 proof generations per second which is perfectly enough for our purpose.
+The result highlights that the creation of the proofs is not time nor resource consuming at all. Note that the verification of the rules and the network latency are not taken into account in the measurement therefore we should expect that the operation take slightly more time to execute. However also not that these tests have been made on a single core of a laptop which is not the hardware that would be use in production. So we can conclude that the oracles can easily sustain more than 1500 proof generations per second which is perfectly enough for our purpose.
 
 \section{Costs}
-Measure done the 21.02.2022 with the compiler version 0.8.12 with the optimizer enable and set to 200.
+The measure has been done the 21.02.2022 with the compiler version 0.8.12 and with the optimizer enable and set to 200.
 
 \subsection{Contract deployment}
+The table \ref{table:contracts_deployment_price} gives the prices for deploying smart contracts. Without surprise it is very expensive to deploy them on Ethereum. However it is still very cheap to do it on Polygon and it would be perfectly bearable for a company like Secutix SA.
+
 \begin{table}[h!]
 \begin{center}
 \begin{NiceTabular}{ |c||c|c|c| }
@@ -553,6 +544,8 @@ Measure done the 21.02.2022 with the compiler version 0.8.12 with the optimizer 
 \end{table}
 
 \subsection{Transaction cost}
+The table \ref{table:identity_contract_transaction_cost}, \ref{table:tix_contract_transaction_cost}, \ref{table:ticketing_contract_transcation_cost}, \ref{table:exchangeV1_contract_transaction_cost}, \ref{table:exchangeV2_contract_transaction_cost} give the prices of transactions. As with the deployment of contracts, it is not conceivable to operate NFTiX on Ethereum. Paying around 30 CHF to mint or to resell a token is way too expensive. On the other hand, Polygon is very interesting. It only costs around 0.0004 CHF to mint a token. You can find more data about the costs in the appendix \ref{sec:appendix_b}. 
+
 \begin{table}[h!]
 \begin{center}
 \begin{NiceTabular}{ |c||c|c|c| }
@@ -643,13 +636,8 @@ Measure done the 21.02.2022 with the compiler version 0.8.12 with the optimizer 
 \end{center}
 \end{table}
 
-You can find more data about the costs in the appendix \ref{sec:appendix_b}.
-
-TODO: explain why updateTokenStateBatch consume less gas but support smaller batch size than burnBatch -> I guess this is due to the gas refund when a state slot is set back to zero. 
-
 \subsection{Proof verification cost}
-TODO: compare regular transfer cost to externally approved transfer cost
-TODO: estimate cost of verifying a signature on-chain (use the identitySignature contract)
+Verification of proofs on the blockchain costs between 6500 and 10000 gas. This corresponds to an increase in costs between 7-15\% compared to the same transactions executed without proof verification. Although these numbers seem large, we remind you that thanks to proofs, we can execute a good part of the business logic off-chain and therefore drastically reduce the costs of transactions.
 
 %%%%%%%%%%%%%%%%%%%%%%
 \chapter{Limitation and future work}
@@ -662,10 +650,8 @@ TODO
 
 Check that a timestamp is below a threshold like time-based transfer rules
 
-\section{payment splitter}
-TODO
-
-To better manage the splitting of money during the resale process and reduce the number of tix transfer proof
+\section{payment splitter with single proof}
+TODO: To better manage the splitting of money during the resale process and reduce the number of tix transfer proof
 
 \section{Proof of ownership and scanner oracle}
 An aspect that has not been addressed in this thesis is the management of the QR code that is scanned at the entrance of the event. TIXnGO uses encrypted QR codes which are revealed before the start of the event. The activation of the QR code can be done using bluetooth beacons. When the phone receives the signal from the beacon, it reveals the QR code. This can also be done with a time based activation. In this case, the QR code is activated a few hours before the start of the event.
