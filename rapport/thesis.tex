@@ -426,7 +426,7 @@ Now let's look at the resale that uses six proofs. There are the Approver's resa
 
 To conclude our analysis, we will show that it is not possible to reuse old proofs to mount a replay attack and that it is also not possible to use a TIX transfer approval proof created by a third party to steal funds from him.
 
-You have certainly noticed that no mechanism prevents reusing the same evidence to mount a replay attack. The reason is that there is actually no need to have one because replay can only fail. Indeed, as the state is no longer the same, the checks performed by the smart contracts fail and so the transaction is reverted. Take for example the case of resale. First, a seller makes a resale offer which is accepted by a buyer. The ticket is transferred to the buyer and the TIXs are transferred to the seller. Now imagine that the seller tries to steal TIX by replaying the resale with the proofs that have been generated beforehand. The resale replay fails because the verification of the ticket owner performed by the smart contract fails. Indeed, the seller is no longer the owner of the ticket. Therefore, replay attacks do not work with our approach. Note that the same is true for swap too.
+You have certainly noticed that no mechanism prevents reusing the same proof to mount a replay attack. The reason is that there is actually no need to have one because replay can only fail. Indeed, as the state is no longer the same, the checks performed by the smart contracts fail and so the transaction is reverted. Take for example the case of resale. First, a seller makes a resale offer which is accepted by a buyer. The ticket is transferred to the buyer and the TIXs are transferred to the seller. Now imagine that the seller tries to steal TIX by replaying the resale with the proofs that have been generated beforehand. The resale replay fails because the verification of the ticket owner performed by the smart contract fails. Indeed, the seller is no longer the owner of the ticket. Therefore, replay attacks do not work with our approach. Note that the same is true for swap too.
 
 Now let's look at the second attack. This attack is not possible because the smart contracts check that the proofs are valid but they also check that the transaction corresponds to the proof. Let's illustrate this with an example. Assume that a resale has taken place between a buyer and a seller, let's call them Alice and Bob. Now imagine that Alice resells a second ticket at the same price to another buyer, let's call her Clara. Clara tries to use the proof of transfer of TIX from the old resale in order to make a resale transaction while keeping her TIXs. This attack is not possible for two reasons. First, the verification of the proof fails because it was not signed by Clara but by Bob. Second, the Exchange contract verifies that the funds are indeed transferred from the buyer to the seller, in this case from Clara to Alice, which is not the case. Therefore, it is not possible to mount this kind of attack.
 
@@ -450,21 +450,15 @@ Finally, it should be noted that if a malicious user managed to find a flaw and 
 %%%%%%%%%%%%%%%%%%%%%%%%
 The implementation of the system is on Github \footnote{https://github.com/SirBouboute/marketplace}. It should be noted that the implementation is at the POC stage. The system is simulated through scripts and tests. However, there is everything needed to make it a production system with dedicated servers, APIs, etc.
 
-The programming languages used are Solidity \footnote{https://docs.soliditylang.org/en/v0.8.12/} for smart contracts and Typescript for scripts and tests. We used Hardhat as development and test environment with the following plugins: hardhat-waffle, ethereum-waffle, chai, hardhat-ethers ethers, hardhat-etherscan, dotenv, eslint, hardhat-gas-reporter, prettier, solhint, solidity -coverage, mocha, ts-node, typechain and typescript.
+The programming languages used are Solidity \footnote{https://docs.soliditylang.org/en/v0.8.12/} for smart contracts and Typescript for scripts and tests. We used Hardhat as development and test environment with the following plugins: hardhat-waffle, ethereum-waffle, chai, hardhat-ethers ethers, hardhat-etherscan, dotenv, eslint, hardhat-gas-reporter, prettier, solhint, solidity -coverage, mocha, ts-node, typechain and typescript. About the smart contract, we use the implementation of OpenZeppelin for the ERC20 standard, the ERC721 standard and the ECDSA signature verification.
 
 %%%%%%%%%%%%%%%%%%%%
 \chapter{Evaluation}
 %%%%%%%%%%%%%%%%%%%%
-
-\textit{In the evaluation you convince the reader that your design works as intended.
-Describe the evaluation setup, the designed experiments, and how the
-experiments showcase the individual points you want to prove.
-This section is usually 5-10 pages.} \\
-
 \section{Proof vs fact registry contract}
 We want to provide a quick comparison of our proof-base approval approach with another approach that more or less addresses the same problem. This approach is to use a smart contract to store facts \footnote{https://docs.starkware.co/starkex-v4/starkex-deep-dive/smart-contracts-1/fact-registry}. This approach is more generic than ours because a fact is not limited to external approval. It can be anything like for example the price of a token against another one at a given time. This is very practical for building for example an AMM. Another interesting point is that a fact can be signed by several parties. This could be very practical for NFTiX because in the context of a resale, we could for example have a single fact signed by the seller, the buyer and the Approver instead of having six proofs. This approach also makes it possible to clearly separate the business logic and the external approval logic because the fact verification code is only on the fact registry contract and not on all the smart contracts as in our case.
 
-However, we decided not to use this approach for several reasons. The first is that our approach is less gas-intensive because we only check the proofs but do not write anything to the blockchain. It is sometimes useful to have persistence but in our case it is not necessary. The second reason is that a fact registry contract might be a single point of failure. If there is a vulnerability in it our external approval system might be fully compromised whereas by distributing the work across several different contracts we reduce the risk in the event of a vulnerability in a contract. Finally, the main reason for our choice is that with our approach we can have transactions which are atomic as a whole and which do not require to make transactions of preparation beforehand. We believe this is a real advantage because by reducing the number of steps needed to complete an action, it greatly reduces the attack surface and the complexity of the system while ensuring an equivalent level of security.
+However, we decided not to use this approach for several reasons. The first is that our approach is less gas-consuming because we only check the proofs but do not write anything to the blockchain. It is sometimes useful to have persistence but in our case it is not necessary. The second reason is that a fact registry contract might be a single point of failure. If there is a vulnerability, our external approval system can be completely compromised while by spreading the work across several different contracts we reduce the risk in the event of a vulnerability in one contract. The idea is to follow the least privilege principal. Finally, the main reason for our choice is that with our approach we can have transactions that are atomic as a whole and do not require to do preparation transactions such as approval. We believe this is a real advantage because by reducing the number of steps needed to complete an action, it greatly reduces the attack surface and the complexity of the system while ensuring an equivalent level of security.
 
 \section{Performance}
 
@@ -504,7 +498,7 @@ In the table \hyperref[table:signatures]{\ref{table:signatures}} you can see the
 \begin{center}
 \begin{NiceTabular}{ |c||c|c|c| }
  \hline
- Batch size & Hashing & Signing & Hashing + Signing \\
+ Batch size & Hashing (s) & Signing (s) & Hashing + Signing (s) \\
  \hline \hline
  1'000   & 0.2164 (0.0002) & 0.3566 (0.0004) & 0.5779 (0.0006) \\
  10'000 & 1.563 (0.0002) & 2.968 (0.0003) & 4.956 (0.0005) \\
@@ -523,7 +517,7 @@ The result highlights that the creation of the proofs is not time nor resource c
 The measure has been done the 21.02.2022 with the compiler version 0.8.12 and with the optimizer enable and set to 200.
 
 \subsection{Contract deployment}
-The table \ref{table:contracts_deployment_price} gives the prices for deploying smart contracts. Without surprise it is very expensive to deploy them on Ethereum. However it is still very cheap to do it on Polygon and it would be perfectly bearable for a company like Secutix SA.
+The table \ref{table:contracts_deployment_price} gives the average prices for deploying smart contracts. Without surprise it is very expensive to deploy them on Ethereum. However it is still very cheap to do it on Polygon and it would be perfectly bearable for a company like Secutix SA.
 
 \begin{table}[h!]
 \begin{center}
@@ -544,7 +538,7 @@ The table \ref{table:contracts_deployment_price} gives the prices for deploying 
 \end{table}
 
 \subsection{Transaction cost}
-The table \ref{table:identity_contract_transaction_cost}, \ref{table:tix_contract_transaction_cost}, \ref{table:ticketing_contract_transcation_cost}, \ref{table:exchangeV1_contract_transaction_cost}, \ref{table:exchangeV2_contract_transaction_cost} give the prices of transactions. As with the deployment of contracts, it is not conceivable to operate NFTiX on Ethereum. Paying around 30 CHF to mint or to resell a token is way too expensive. On the other hand, Polygon is very interesting. It only costs around 0.0004 CHF to mint a token. You can find more data about the costs in the appendix \ref{sec:appendix_b}. 
+The table \ref{table:identity_contract_transaction_cost}, \ref{table:tix_contract_transaction_cost}, \ref{table:ticketing_contract_transcation_cost}, \ref{table:exchangeV1_contract_transaction_cost}, \ref{table:exchangeV2_contract_transaction_cost} give the average prices of transactions. As for the deployment of contracts, it is not conceivable to operate NFTiX on Ethereum. Paying around 30 CHF to mint or to resell a token is way too expensive. On the other hand, Polygon is very interesting. It only costs around 0.0004 CHF to mint a token. You can find more data about costs on Ethereum and Polygon in appendix \ref{sec:appendix_b}. There is also cost measurement for the Avalanche blockchain and the Binance smart chain.
 
 \begin{table}[h!]
 \begin{center}
@@ -637,21 +631,11 @@ The table \ref{table:identity_contract_transaction_cost}, \ref{table:tix_contrac
 \end{table}
 
 \subsection{Proof verification cost}
-Verification of proofs on the blockchain costs between 6500 and 10000 gas. This corresponds to an increase in costs between 7-15\% compared to the same transactions executed without proof verification. Although these numbers seem large, we remind you that thanks to proofs, we can execute a good part of the business logic off-chain and therefore drastically reduce the costs of transactions.
+Verification of proof on the blockchain costs between 6500 and 10000 gas. This corresponds to a cost increase between 7 and 15\% compared to the same transactions executed without verification of proof. Although these numbers seem large, we remind you that thanks to proofs, we can execute a good part of the business logic off-chain and therefore drastically reduce the costs of transactions.
 
 %%%%%%%%%%%%%%%%%%%%%%
 \chapter{Limitation and future work}
 %%%%%%%%%%%%%%%%%%%%%%
-
-TODO: production ready implementation
-
-\section{Time-based proof expiration}
-TODO
-
-Check that a timestamp is below a threshold like time-based transfer rules
-
-\section{payment splitter with single proof}
-TODO: To better manage the splitting of money during the resale process and reduce the number of tix transfer proof
 
 \section{Proof of ownership and scanner oracle}
 An aspect that has not been addressed in this thesis is the management of the QR code that is scanned at the entrance of the event. TIXnGO uses encrypted QR codes which are revealed before the start of the event. The activation of the QR code can be done using bluetooth beacons. When the phone receives the signal from the beacon, it reveals the QR code. This can also be done with a time based activation. In this case, the QR code is activated a few hours before the start of the event.
@@ -660,28 +644,32 @@ The problem with this approach is that the QR code and the decryption key must b
 
 Another approach is to generate a QR code that depends on the ticket owner, i.e. if two people had the same ticket, they would see a different QR code. With this approach, it is not necessary to encrypt the QR code. This approach is relatively easy to set up and has already been tested by AlphaWallet. The approach consists in generating a proof of ownership attesting that the person holds the ticket. To do this, the person proves that he is the owner of the address holding the ticket. The proof is then used to construct the QR code. You can find more info here\footnote{https://medium.com/opensea/cryptotickets-the-first-blockchain-based-tickets-are-live-on-opensea-5a29d0223c3d}.
 
-\section{Decentralized oracles}
-As we mentioned above, oracles are centralized. This is not a good thing because it creates a single point of failure, it opens the door to censorship and it goes against the philosophy of decentralization. To overcome these problems, we could use a decentralized oracle such as Chainlink.
+With this approach we also need a new oracle that update the status of the ticket in the blockchain in order to prevent someone to transfer or resale it after it was scanned. 
 
-\section{Performance test on zkSync or StarkNet}
-The zk rollups, which in my opinion are the future of blockchain scalability, are becoming increasingly popular. It would be interesting to see how well the system would perform and what changes would need to be made to the system in order to make it work on these layer 2.
+\section{External payment channel and proof}
+At the moment crypto remains a niche market and most people still prefer to pay with fiat currencies. There are two ways to solve this problem. The first is to integrate a fiat to crypto converter such as Ramp \footnote{https://ramp.network/}. In the context of a resale, a user can use Ramp to purchase with his credit card the number of TIX required to satisfy a resale. Once the payment is made, the TIXs are automatically transferred to the seller without the buyer having to do anything.
+
+However, this approach implies that the seller receives TIXs when he may wish to receive the amount in fiat currency. It is possible to convert TIX into fiat currency but this involves a conversion and therefore additional costs. To fix this limitation NFTiX can also support an external payment system such as Stripe \footnote{https://stripe.com/fr-ch}. This approach requires a slight change in how resale works. The buyer's three TIX transfer approval proofs are replaced by a single proof issued by an oracle that handles external payments. During a resale, the oracle creates a payment request. Once the buyer has made the payment, the oracle generates a proof that the payment has been executed and returns it to the buyer who uses it to make the resale.
+
+\section{Decentralized oracles}
+As we mentioned previously, oracles are centralized. This is not a good thing because it creates a single point of failure, it opens the door to censorship and it goes against the philosophy of decentralization. To overcome these problems, we could use a decentralized oracle such as Chainlink.
+
+\section{payment splitter with single proof}
+With out approach, the buyer of a ticket needs to create three TIX transfer approval proof and the Exchange smart contract needs to call three time the transferFrom function of the TIX contract in order to transfer the three shares. To avoid this we can use a payment splitter and a single proof. The splitter checks that the proof is valid and then transfer the shares in a single function call and so save some gas. 
 
 \section{TIX token features}
 For the moment, the TIX token has very little use and it could perfectly be replaced by ETH. Here are some ideas that might make it more useful.
 
-TODO: use an AMM to buy TIX instead of the custom made approach
-
 The TIX could be used as a governance token so that users can vote for new features in the application. For example, it would be possible to make a vote to determine if the spectators would like to have the possibility of claiming the souvenir ticket of an event in the form of NFT. The governance could also let the organizers vote for the next features they would like the development team to implement first.
 
-It would also be possible to create a reward pool that can be shared regularly between the most acidus users of the application or to people who discover security flaws in the system. The pool could be filled by taking a small commission on each resale of tickets.
+It would also be possible to create a reward pool that can be shared regularly between the most assiduous users of the application or to people who discover security flaws in the system. The pool could be filled by taking a small commission on each resale of tickets.
 
-TODO: instead of a token we can also emit a tokenized security with the help of Taurus
+Another cool feature would be for the exchange to buy back tickets for TIX. Sometimes someone can't attend an event for some reason and fails to sell their ticket. It would be great if that person could sell their ticket on the stock exchange and get back some TIX in exchange because they could then use those TIXs to buy another ticket in the future. This could create a kind of virtuous circle.
 
-TODO: explain how we can use the proof to enable external payment, for instance with STRIP
+Finally, the token should be listed in a decentralized exchange such as Uniswap or Curve instead of using the buy function which locks ETH and mint TIX in exchange. This approach is not scalable at all because if the TIX takes a lot of value, the amount of ETH will no longer be enough to reimburse people who sell their TIX.
 
-TODO: exchange with liquidity to buy back tickets in exchange of TIX. This could be a good incentive to fight black market and side channel payment.
-
-TODO: list potential on-chain rules: limit the number of ticket hold by single spectator by event, etc
+\section{Performance test on zkSync and StarkNet}
+The zk rollups, which in my opinion are the future of blockchain scalability, are becoming increasingly popular. It would be interesting to see how well the system would perform and what changes would need to be made to the system in order to make it work on these layer 2.
 
 %%%%%%%%%%%%%%%%%%%%
 \chapter{Conclusion}
@@ -690,6 +678,9 @@ TODO: list potential on-chain rules: limit the number of ticket hold by single s
 \textit{In the conclusion you repeat the main result and finalize the discussion of
 your project. Mention the core results and why as well as how your system
 advances the status quo.} \\
+
+
+
 
 \cleardoublepage
 \phantomsection
