@@ -47,16 +47,6 @@ interface IExchangeV1 {
         uint256 indexed creatorTokenId,
         uint256 indexed acceptorTokenId
     );
-    event Resale(
-        uint256 tokenId,
-        address buyer,
-        address seller,
-        address tixngo,
-        address organizer,
-        uint256 sellerShare,
-        uint256 tixngoShare,
-        uint256 organizerShare
-    );
 
     /*
     functions

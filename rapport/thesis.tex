@@ -34,7 +34,7 @@ Players in the ticketing industry are constantly fighting against the black mark
 
 This thesis seeks to show that it is possible to build the foundations of a decentralized, non-custodial and regulated user management system, ticket management system and marketplace based on smart contracts, oracles and indexers. Our system comprises four smart contracts that manage users' registration, enforce access control, apply event and ticket business logic, and allow secure and regulated ticket exchanges between untrusted parties. Our system is also composed of three oracles that complement smart contracts. The oracles securely bring data on the blockchain and execute the business logic that cannot be executed on-chain. \\
 
-In addition, we present a new approval mechanism for the ERC20 and ERC721 standards that allows a smart contract to operate assets without making an approval transaction beforehand. This mechanism is handy when a task contains several subtasks requiring approval because it allows atomic execution of all subtasks in a single transaction. Moreover, it prevents an attack exploiting a race condition between multiple approvals and transfers due to transaction reordering. \\
+In addition, we present a new approval mechanism for the ERC20 and ERC721 standards that allows a smart contract to operate assets without making an approval transaction beforehand. This mechanism is handy when a task contains several subtasks requiring approval because it allows atomic execution of all subtasks in a single transaction. Moreover, it prevents a well-known attack exploiting a race condition between multiple approvals and transfers due to transaction reordering. \\
 
 Our contribution is necessary because current solutions are mostly not decentralized and do not fully utilize the potential of blockchain technologies. Moreover, having a regulated marketplace is necessary and will undoubtedly become the norm in the coming years when governments begin to regulate blockchain technologies. \\
 \end{abstract}
@@ -78,7 +78,7 @@ Implementation and testing show that it is possible to build such a system. The 
 
 Therefore, this approach makes it possible to build a regulated marketplace that supports any regulation rules. In addition, as the execution is carried out or verified on the blockchain, we ensure a very high level of security and decentralization. The only downside comes from the oracle, which is unfortunately not decentralized. However, decentralized oracles, such as Chainlink, exist and can achieve a fully decentralized system.
 
-In summary, our main contribution is to lay the foundations for building a secure, regulated, non-custodial and decentralized user management system, ticket management system and marketplace. Additionally, we present a new approval mechanism for the ERC20 and ERC721 standards that allows atomic execution of complex tasks and fixes an attack exploiting a race condition on the current approval mechanism. We present a few other mechanisms that can be interesting for the ticketing industry, such as time-based blockchain logic or a mix of custodial and non-custodial design, allowing users to control their assets while ensuring regulation and a high level of security. Finally, we want to clarify that although this approach uses the ticketing industry as a scenario, it can be perfectly applied to other sectors with similar needs.
+In summary, our main contribution is to lay the foundations for building a secure, regulated, non-custodial and decentralized user management system, ticket management system and marketplace. Additionally, we present a new approval mechanism for the ERC20 and ERC721 standards that allows atomic execution of complex tasks and prevent attacks exploiting a race condition on approve and transferFrom methods. We present a few other mechanisms that can be interesting for the ticketing industry, such as time-based blockchain logic or a mix of custodial and non-custodial design, allowing users to control their assets while ensuring regulation and a high level of security. Finally, we want to clarify that although this approach uses the ticketing industry as a scenario, it can be perfectly applied to other sectors with similar needs.
 
 %%%%%%%%%%%%%%%%%%%%
 \chapter{Background}
@@ -704,21 +704,11 @@ In addition, this approach could perhaps make it possible to build a regulation 
 your project. Mention the core results and why as well as how your system
 advances the status quo.} \\
 
-NFTiX is a ticket engine that aims to build the new TIXnGO ticket distribution system. It includes a user management system, an event and ticket management system and a ticket exchange system that is secure, decentralized, regulated and non-custodial. To our knowledge, there is no such system yet at the time of writing this thesis.
+NFTiX is a decentralized and non-custodial ticket engine that aims to power the new TIXnGO ticket distribution system. It includes a user management system, an event and ticket management system, and a ticket exchange that allows secure and regulated ticket exchanges between untrusted parties. To our knowledge, there is no such system yet at the time of writing this thesis.
 
-Our core contribution is our regulation strategy through external proofs that allow atomic operations to be performed and our completely non-custodial design that allows users to be the sole owners of their assets.
+Our security analysis shows that the system fulfils well its role in the fight against the black market and fraud. Our evaluation shows that it is possible to put NFTiX into production because the costs would not be too high, and the performance would be sufficient.
 
-Finally, our security analysis shows that our system fulfils well its role in the fight against the black market and fraud. Our evaluation shows that it is possible to put NFTiX into production because the costs would not be too high, and the performance would be sufficient.
-
-
-TODO: explain the improvement of the ERC20 standard with the externally approved transaction allowing a contract to perform a operation on the behalf of a user and explain that it fixes the problem of an attack leveraging a race condition between multiple approvals and transfers due to transaction ordering 
-
-TODO: explain that the proof and the externally approved transaction allow to execute atomically transaction containing several subtasks that would be normally exectued in several transactions such as approval
-
-TODO: list the lot of cool idea in the future work
-
-TODO: put in intro too and concl
-
+Finally, our core contribution is the proof-based strategy that allows decentralized and non-custodial exchange regulation, the new approval mechanism for the ERC20 and ERC721 standards allowing atomic execution of complex tasks and fixing a well-known vulnerability in the approval mechanism, and our utterly non-custodial ticket engine allowing users to be the sole owners of their assets.
 
 \cleardoublepage
 \phantomsection
@@ -732,14 +722,10 @@ TODO: put in intro too and concl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \label{sec:appendix_a}
 
-TODO: add ExchangeV2 events
-
 The structure of an event is the following: 
 \begin{verbatim}
 EventName(typeOfFirstElt nameOfFirstElt, typeOfSecondElt nameOfSecondElt, ...)
 \end{verbatim}
-
-
 
 \paragraph{Identity}
 \begin{verbatim}
@@ -767,7 +753,7 @@ Transfer(address from, address to, uint256 tokenId);
 Approval(address owner, address approved, uint256 tokenId);
 \end{verbatim}
 
-\paragraph{Exchange}
+\paragraph{Exchange V1}
 \begin{verbatim}
 CreateResale(uint256 tokenId, uint256 price, address optionalBuyer);
 CancelResale(uint256 tokenId);
@@ -776,6 +762,13 @@ CreateSwap(uint256 tokenId, uint256 eventIdOfWantedToken, address optionalPartic
 CancelSwap(uint256 tokenId);
 AcceptSwap(address creator, address acceptor, uint256 creatorTokenId, 
            uint256 acceptorTokenId);
+\end{verbatim}
+
+\paragraph{Exchange V2}
+\begin{verbatim}
+Resale(uint256 tokenId, address buyer, address seller, address tixngo, address 
+       organizer, uint256 sellerShare, uint256 tixngoShare, uint256 organizerShare);
+Swap(uint256 tokenId_A, uint256 tokenId_B, address user_A, address user_B);
 \end{verbatim}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
