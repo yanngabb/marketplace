@@ -587,6 +587,7 @@ The table \ref{table:identity_contract_transaction_cost}, \ref{table:tix_contrac
 
 \begin{table}[h!]
 \begin{center}
+\makebox[\textwidth][c]{
 \begin{NiceTabular}{ |c||c|c|c| }
  \hline
  Transaction & Avg gas (Gwei) & Avg cost in Ethereum (CHF) & Avg cost in Ethereum (CHF) \\
@@ -601,7 +602,7 @@ The table \ref{table:identity_contract_transaction_cost}, \ref{table:tix_contrac
  UpdateTokenStateBatch & 3'812'565 & 632.50 & 0.16 \\
  TransferFrom & 72'141 & 11.97 & < 0.01 \\
  \hline
-\end{NiceTabular}
+\end{NiceTabular}}
 \captionsetup{justification=centering}
 \caption{Ticketing contract transaction cost}
 \label{table:ticketing_contract_transcation_cost}
@@ -699,11 +700,6 @@ In addition, this approach could perhaps make it possible to build a regulation 
 %%%%%%%%%%%%%%%%%%%%
 \chapter{Conclusion}
 %%%%%%%%%%%%%%%%%%%%
-
-\textit{In the conclusion you repeat the main result and finalize the discussion of
-your project. Mention the core results and why as well as how your system
-advances the status quo.} \\
-
 NFTiX is a decentralized and non-custodial ticket engine that aims to power the new TIXnGO ticket distribution system. It includes a user management system, an event and ticket management system, and a ticket exchange that allows secure and regulated ticket exchanges between untrusted parties. To our knowledge, there is no such system yet at the time of writing this thesis.
 
 Our security analysis shows that the system fulfils well its role in the fight against the black market and fraud. Our evaluation shows that it is possible to put NFTiX into production because the costs would not be too high, and the performance would be sufficient.
@@ -778,7 +774,7 @@ Swap(uint256 tokenId_A, uint256 tokenId_B, address user_A, address user_B);
 
 \begin{center}
 \begin{figure}[h!] 
-  \includegraphics[width=\textwidth]{transactions_price_ethereum_21_02_2022.PNG}
+  \makebox[\textwidth][c]{\includegraphics[width=\textwidth]{transactions_price_ethereum_21_02_2022.PNG}}
   \caption{Transaction price on Ethereum the 21.02.2022}
   \label{fig:transactions_price_ethereum_21_02_2022}
 \end{figure}
