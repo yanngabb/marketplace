@@ -30,11 +30,13 @@ Secutix SA, an ELCA company \\}
 \makeacks
 
 \begin{abstract}
-Players in the ticketing industry are constantly fighting against the black market and fraud to ensure that malicious people do not harm their customers. In recent years, blockchain-based digital tickets have started to become more popular. The idea is to store tickets on the blockchain to guarantee their origin and integrity. Secutix has some experience in this area through their product TIXnGO. Two questions now arise. How to ensure that ticket resales are secure and regulated and build a decentralized ticket marketplace. \\
+Players in the ticketing industry are constantly fighting against the black market and fraud to ensure that malicious people do not harm their customers. In recent years, blockchain-based digital tickets have started to become increasingly popular. The idea is to store tickets on the blockchain to guarantee their authenticity and integrity. Two questions now arise. How to ensure that ticket resales are secure and regulated, and how to build a decentralized and non-custodial marketplace. \\
 
-This thesis seeks to show that it is possible to build the foundations of a decentralized, non-custodial and regulated user management system, ticket management system and marketplace based on smart contracts, oracles and indexers. Our system is composed of four smart contracts. The first manages users and access control. The second manages events and ticket business logic. The third manages ticket exchanges between users. The last one manages the TIX token, the utility token of NFTiX. In addition to contracts, our system is composed of three oracles that complement smart contracts. The oracles bring data on the blockchain and compute the business logic that cannot be computed on-chain. \\
+This thesis seeks to show that it is possible to build the foundations of a decentralized, non-custodial and regulated user management system, ticket management system and marketplace based on smart contracts, oracles and indexers. Our system comprises four smart contracts that manage users' registration, enforce access control, apply events and ticket business logic, and allow secure and regulated ticket exchanges between untrusted parties. Our system is also composed of three oracles that complement smart contracts. The oracles securely bring data on the blockchain and execute the business logic that cannot be executed on-chain. \\
 
-Our contribution is necessary because current solutions are mostly not decentralized or do not take full advantage of blockchain technologies. Moreover, having a regulated market is necessary and will undoubtedly become the norm in the coming years when governments begin to regulate blockchain technologies. \\
+In addition, we present a new approval mechanism for the ERC20 and ERC721 standards that allows a smart contract to operate assets without making an approval transaction beforehand. This mechanism is handy when a task contains several subtasks requiring approval because it allows atomic execution of all subtasks in a single transaction. Moreover, it solves the problem of an attack exploiting a race condition between multiple approvals and transfers due to transaction reordering. \\
+
+Our contribution is necessary because current solutions are mostly not decentralized and do not fully utilize the potential of blockchain technologies. Moreover, having a regulated marketplace is necessary and will undoubtedly become the norm in the coming years when governments begin to regulate blockchain technologies. \\
 
 TODO: explain the improvement of the ERC20 standard with the externally approved transaction allowing a contract to perform a operation on the behalf of a user and explain that it fixes the problem of an attack leveraging a race condition between multiple approvals and transfers due to transaction ordering 
 
@@ -42,7 +44,7 @@ TODO: explain that the proof and the externally approved transaction allow to ex
 
 TODO: list the lot of cool idea in the future work
 
-TODO: put in intro too
+TODO: put in intro too and concl
 
 \end{abstract}
 
